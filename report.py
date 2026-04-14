@@ -4,18 +4,20 @@ from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
 from io import StringIO
 
-from calculations import calculate_orbital_velocity, meters_to_km
+from calculations import calculate_orbital_period, calculate_orbital_velocity, meters_to_km
+from constants import DATA_VALIDATION_DATE
 from data import CONCEPT_STATIONS, EARTH_ORBITS, ISS_TO_MOON_DISTANCE, PLANETS
 
 LABEL_WIDTH = 36
 VALUE_WIDTH = 14
+
 REPORT_TITLE = "PLANET ORBITAL SIMULATION & SPACE EXPLORATION GUIDE"
 REPORT_SCHEMA_VERSION = "1.0.0"
 SECTION_ORDER = ["planets", "earth", "concepts", "mars-base"]
 VALID_SECTIONS = ["all", *SECTION_ORDER]
 VALID_OUTPUT_FORMATS = ["text", "json", "csv"]
 SECTION_TITLES = {
-    "planets": "PLANET ORBITAL VELOCITY DATA",
+    "planets": "PLANET ORBITAL VELOCITY & PERIOD DATA",
     "earth": "EARTH ORBITAL SYSTEMS",
     "concepts": "CONCEPT STATIONS",
     "mars-base": "MARS BASE CONCEPT",
@@ -32,81 +34,114 @@ class MetricRecord:
     note: str = ""
 
 
-def _planet_velocity_records():
+def _format_period(period_hours: float) -> tuple[str, str]:
+    """Scale a period to a human-readable (value_str, unit_str) pair."""
+    period_days = period_hours / 24
+    if period_days >= 730:
+        return f"{period_days / 365.25:.1f}", "Earth years"
+    elif period_days >= 2:
+        return f"{period_days:.1f}", "Earth days"
+    elif period_hours >= 1:
+        return f"{period_hours:.1f}", "hours"
+    else:
+        return f"{period_hours * 60:.0f}", "minutes"
+
+
+def _planet_velocity_records() -> list[MetricRecord]:
     records = []
-    for name, orbital_radius, central_mass in PLANETS:
-        velocity_km = calculate_orbital_velocity(orbital_radius, central_mass)
-        records.append(
-            MetricRecord(
-                section="planets",
-                label=f"{name} orbital velocity",
-                value=f"{velocity_km:.2f}",
-                value_num=round(velocity_km, 2),
-                unit="km/s",
-            )
-        )
+    for body in PLANETS:
+        velocity_km = calculate_orbital_velocity(body.orbital_radius_m, body.central_mass_kg)
+        records.append(MetricRecord(
+            section="planets",
+            label=f"{body.name} orbital velocity",
+            value=f"{velocity_km:.2f}",
+            value_num=round(velocity_km, 2),
+            unit="km/s",
+        ))
+
+        period_hours = calculate_orbital_period(body.orbital_radius_m, body.central_mass_kg)
+        period_value, period_unit = _format_period(period_hours)
+        records.append(MetricRecord(
+            section="planets",
+            label=f"{body.name} orbital period",
+            value=period_value,
+            value_num=round(float(period_value), 1),
+            unit=period_unit,
+        ))
     return records
 
 
-def _earth_orbit_records():
+def _earth_orbit_records() -> list[MetricRecord]:
     records = []
-    for name, orbital_radius, central_mass, kind in EARTH_ORBITS:
-        velocity_km = calculate_orbital_velocity(orbital_radius, central_mass)
-        records.append(
-            MetricRecord(
-                section="earth",
-                label=f"{name} orbital velocity",
-                value=f"{velocity_km:.2f}",
-                value_num=round(velocity_km, 2),
-                unit="km/s",
-                note=kind,
-            )
-        )
+    for body in EARTH_ORBITS:
+        velocity_km = calculate_orbital_velocity(body.orbital_radius_m, body.central_mass_kg)
+        records.append(MetricRecord(
+            section="earth",
+            label=f"{body.name} orbital velocity",
+            value=f"{velocity_km:.2f}",
+            value_num=round(velocity_km, 2),
+            unit="km/s",
+            note=body.body_type,
+        ))
+
+        period_hours = calculate_orbital_period(body.orbital_radius_m, body.central_mass_kg)
+        period_value, period_unit = _format_period(period_hours)
+        records.append(MetricRecord(
+            section="earth",
+            label=f"{body.name} orbital period",
+            value=period_value,
+            value_num=round(float(period_value), 1),
+            unit=period_unit,
+            note=body.body_type,
+        ))
 
     iss_to_moon_km = meters_to_km(ISS_TO_MOON_DISTANCE)
-    records.append(
-        MetricRecord(
-            section="earth",
-            label="ISS distance from Moon",
-            value=f"{iss_to_moon_km:.0f}",
-            value_num=round(iss_to_moon_km, 0),
-            unit="km",
-        )
-    )
+    records.append(MetricRecord(
+        section="earth",
+        label="ISS distance from Moon",
+        value=f"{iss_to_moon_km:.0f}",
+        value_num=round(iss_to_moon_km, 0),
+        unit="km",
+    ))
     return records
 
 
-def _concept_station_records():
+def _concept_station_records() -> list[MetricRecord]:
     records = []
-    for name, midpoint_distance, note in CONCEPT_STATIONS:
-        midpoint_km = meters_to_km(midpoint_distance)
-        records.append(
-            MetricRecord(
-                section="concepts",
-                label=f"Concept station {name}",
-                value=f"{midpoint_km:.0f}",
-                value_num=round(midpoint_km, 0),
-                unit="km",
-                note=note,
-            )
-        )
+    for station in CONCEPT_STATIONS:
+        midpoint_km = meters_to_km(station.distance_m)
+        records.append(MetricRecord(
+            section="concepts",
+            label=f"Concept station {station.name}",
+            value=f"{midpoint_km:.0f}",
+            value_num=round(midpoint_km, 0),
+            unit="km",
+            note=station.note,
+        ))
     return records
 
 
-def _mars_base_records():
+def _mars_base_records() -> list[MetricRecord]:
+    """Conceptual planning fields — not engineering-specified."""
+    note = "Conceptual — not engineering-specified"
     return [
-        MetricRecord("mars-base", "Location", "TBD"),
+        MetricRecord("mars-base", "Location", "TBD", note=note),
         MetricRecord("mars-base", "Primary habitation", "TBD", note="Target crew habitat sizing"),
-        MetricRecord("mars-base", "Core systems", "Habitat, life support, power, landing pad"),
-        MetricRecord("mars-base", "Life support", "Radiation shielding, water extraction, O2 generation"),
-        MetricRecord("mars-base", "Power profile", "Nuclear primary, solar secondary, battery reserve"),
-        MetricRecord("mars-base", "Safety controls", "Pressure auto-seal, dust airlocks, evacuation protocols"),
-        MetricRecord("mars-base", "Crew capacity", "TBD"),
-        MetricRecord("mars-base", "Mission duration", "TBD"),
+        MetricRecord("mars-base", "Core systems", "Habitat, life support, power, landing pad", note=note),
+        MetricRecord("mars-base", "Life support", "Radiation shielding, water extraction, O2 generation", note=note),
+        MetricRecord("mars-base", "Power profile", "Nuclear primary, solar secondary, battery reserve", note=note),
+        MetricRecord("mars-base", "Safety controls", "Pressure auto-seal, dust airlocks, evacuation protocols", note=note),
+        MetricRecord("mars-base", "Crew capacity", "TBD", note=note),
+        MetricRecord("mars-base", "Mission duration", "TBD", note=note),
     ]
 
 
-def collect_records(section):
+def collect_records(section: str) -> list[MetricRecord]:
+    """Return ordered MetricRecords for the given section.
+
+    Raises:
+        ValueError: If section is not in VALID_SECTIONS.
+    """
     _validate_section(section)
     by_section = {
         "planets": _planet_velocity_records,
@@ -122,7 +157,7 @@ def collect_records(section):
     return by_section[section]()
 
 
-def _format_text_metric(record):
+def _format_text_metric(record: MetricRecord) -> str:
     label_text = f"{record.label}:".ljust(LABEL_WIDTH)
     value_text = f"{record.value:>{VALUE_WIDTH}}"
     unit_text = f" {record.unit}" if record.unit else ""
@@ -130,7 +165,7 @@ def _format_text_metric(record):
     return f"{label_text}{value_text}{unit_text}{note_text}"
 
 
-def render_text(section):
+def render_text(section: str) -> str:
     records = collect_records(section)
     lines = [f"--{REPORT_TITLE}--", "Project Summary: orbital data and conceptual mission planning"]
     active_sections = SECTION_ORDER if section == "all" else [section]
@@ -143,20 +178,35 @@ def render_text(section):
     return "\n".join(lines)
 
 
-def render_json(section):
+def render_json(section: str) -> str:
+    """Render a JSON payload including schema version, provenance, assumptions, and records."""
     records = [asdict(record) for record in collect_records(section)]
     payload = {
         "report_title": REPORT_TITLE,
         "report_schema_version": REPORT_SCHEMA_VERSION,
         "generated_at_utc": datetime.now(timezone.utc).isoformat(),
         "section": section,
-        "assumption": "Circular orbit approximation v = sqrt(GM/r)",
+        "data_sources": {
+            "gravitational_constant": "CODATA 2018",
+            "astronomical_unit": "IAU 2012 Resolution B2",
+            "solar_mass": "IAU 2015 Resolution B3",
+            "planetary_semi_major_axes": "JPL Horizons, epoch J2000.0",
+            "earth_moon_iss_data": "NASA fact sheets (2024)",
+            "data_validation_date": DATA_VALIDATION_DATE,
+        },
+        "assumptions": [
+            "Circular orbit approximation: v = sqrt(GM/r)",
+            "Orbital period from Kepler's third law: T = 2*pi*sqrt(r^3/GM)",
+            "Moon distance is semi-major axis (actual range 356,500-406,700 km)",
+            "ISS altitude is approximate mean as of 2024-Q1",
+            "Perturbations and eccentricity ignored except where noted",
+        ],
         "records": records,
     }
     return json.dumps(payload, indent=2)
 
 
-def render_csv(section):
+def render_csv(section: str) -> str:
     records = collect_records(section)
     output = StringIO()
     writer = csv.writer(output)
@@ -168,7 +218,12 @@ def render_csv(section):
     return output.getvalue().rstrip("\n")
 
 
-def render_report(section, output_format):
+def render_report(section: str, output_format: str) -> str:
+    """Validate inputs and dispatch to the appropriate renderer.
+
+    Raises:
+        ValueError: If section or output_format is invalid.
+    """
     _validate_section(section)
     _validate_output_format(output_format)
 
@@ -180,13 +235,13 @@ def render_report(section, output_format):
     return renderers[output_format](section)
 
 
-def _validate_section(section):
+def _validate_section(section: str) -> None:
     if section not in VALID_SECTIONS:
         valid_sections = ", ".join(VALID_SECTIONS)
         raise ValueError(f"Unsupported section '{section}'. Valid options: {valid_sections}")
 
 
-def _validate_output_format(output_format):
+def _validate_output_format(output_format: str) -> None:
     if output_format not in VALID_OUTPUT_FORMATS:
         valid_formats = ", ".join(VALID_OUTPUT_FORMATS)
         raise ValueError(f"Unsupported output format '{output_format}'. Valid options: {valid_formats}")

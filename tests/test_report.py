@@ -8,12 +8,17 @@ from report import REPORT_SCHEMA_VERSION, collect_records, render_report
 
 class TestReportContracts(unittest.TestCase):
     def test_all_section_record_counts_and_order(self):
+        # planets: 8 velocity + 8 period = 16
+        # earth:   2 velocity + 2 period + 1 distance = 5
+        # concepts: 2
+        # mars-base: 8
+        # total: 31
         records = collect_records("all")
         sections = [record.section for record in records]
 
-        self.assertEqual(len(records), 21)
-        self.assertEqual(sections.count("planets"), 8)
-        self.assertEqual(sections.count("earth"), 3)
+        self.assertEqual(len(records), 31)
+        self.assertEqual(sections.count("planets"), 16)
+        self.assertEqual(sections.count("earth"), 5)
         self.assertEqual(sections.count("concepts"), 2)
         self.assertEqual(sections.count("mars-base"), 8)
         self.assertEqual(records[0].label, "Mercury orbital velocity")
@@ -25,7 +30,7 @@ class TestReportContracts(unittest.TestCase):
         self.assertEqual(payload["report_schema_version"], REPORT_SCHEMA_VERSION)
         self.assertIn("generated_at_utc", payload)
         self.assertIsInstance(payload["records"], list)
-        self.assertEqual(len(payload["records"]), 3)
+        self.assertEqual(len(payload["records"]), 5)
 
         required_fields = {"section", "label", "value", "value_num", "unit", "note"}
         for record in payload["records"]:
@@ -36,6 +41,20 @@ class TestReportContracts(unittest.TestCase):
             self.assertIn(type(record["value_num"]), (int, float, type(None)))
             self.assertIsInstance(record["unit"], str)
             self.assertIsInstance(record["note"], str)
+
+    def test_json_contains_data_sources(self):
+        payload = json.loads(render_report("planets", "json"))
+        self.assertIn("data_sources", payload)
+        sources = payload["data_sources"]
+        self.assertIn("gravitational_constant", sources)
+        self.assertIn("planetary_semi_major_axes", sources)
+        self.assertIn("data_validation_date", sources)
+
+    def test_json_contains_assumptions(self):
+        payload = json.loads(render_report("planets", "json"))
+        self.assertIn("assumptions", payload)
+        self.assertIsInstance(payload["assumptions"], list)
+        self.assertGreater(len(payload["assumptions"]), 0)
 
     def test_csv_contract_shape(self):
         csv_text = render_report("concepts", "csv")
@@ -59,6 +78,15 @@ class TestReportContracts(unittest.TestCase):
     def test_invalid_output_format_raises_value_error(self):
         with self.assertRaises(ValueError):
             render_report("planets", "yaml")
+
+    def test_full_pipeline_produces_valid_json(self):
+        raw = render_report("all", "json")
+        payload = json.loads(raw)
+        self.assertEqual(payload["report_schema_version"], REPORT_SCHEMA_VERSION)
+        self.assertEqual(payload["section"], "all")
+        self.assertEqual(len(payload["records"]), 31)
+        self.assertIn("data_sources", payload)
+        self.assertIn("assumptions", payload)
 
 
 if __name__ == "__main__":

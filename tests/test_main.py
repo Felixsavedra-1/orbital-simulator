@@ -18,7 +18,7 @@ class TestMainCLI(unittest.TestCase):
 
     def test_planets_section_only(self):
         output = self._run_main_with_args(["--section", "planets"])
-        self.assertIn("--PLANET ORBITAL VELOCITY DATA--", output)
+        self.assertIn("--PLANET ORBITAL VELOCITY & PERIOD DATA--", output)
         self.assertNotIn("--EARTH ORBITAL SYSTEMS--", output)
 
     def test_earth_section_only(self):
@@ -28,7 +28,7 @@ class TestMainCLI(unittest.TestCase):
 
     def test_all_sections(self):
         output = self._run_main_with_args([])
-        self.assertIn("--PLANET ORBITAL VELOCITY DATA--", output)
+        self.assertIn("--PLANET ORBITAL VELOCITY & PERIOD DATA--", output)
         self.assertIn("--EARTH ORBITAL SYSTEMS--", output)
         self.assertIn("--CONCEPT STATIONS--", output)
         self.assertIn("--MARS BASE CONCEPT--", output)

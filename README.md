@@ -1,32 +1,48 @@
 # Orbital Simulation Report Engine
 
-This project provides a deterministic orbital mechanics reporting tool for technical review, academic submission, and institutional analysis workflows.
+A deterministic orbital mechanics reporting tool for technical review, academic submission, and institutional analysis workflows.
 
 ## What It Produces
-- Planet orbital velocity estimates for Mercury through Neptune
-- Earth orbital system metrics for Moon and ISS
+- Orbital velocity and period for Mercury through Neptune
+- Earth orbital system metrics for Moon and ISS (velocity, period, and separation distance)
 - Concept station distances for Earth-Moon and Earth-Mars midpoints
 - Mars base concept fields for planning discussions
 
-## Institutional Readiness Upgrades
-- Structured output model with `text`, `json`, and `csv` report formats
-- Optional file export with stable output contracts for downstream systems
-- Versioned JSON schema contract via `report_schema_version` (currently `1.0.0`)
-- Machine-readable numeric field (`value_num`) included alongside display strings
-- Input validation in core physics functions (rejects non-physical values)
-- Expanded unit test coverage across calculations, data integrity, and CLI behavior
-- Explicit assumptions and model limitations for auditability
+## Physics Reference
 
-## Methodology
-- Orbital speed formula: `v = sqrt(GM/r)`
-- Model type: circular orbit approximation
-- Units: SI inputs, output velocity in `km/s`
-- Data basis:
-  - IAU astronomical unit definition
-  - NASA fact-sheet values for body mass/radius and Moon distance
-  - JPL approximate planetary semi-major axes (AU)
+All calculations use the circular orbit approximation. For a body of mass *M* with an orbiting body at radius *r*:
+
+| Quantity | Formula |
+|---|---|
+| Orbital velocity | `v = sqrt(GM / r)` → km/s |
+| Orbital period (Kepler's third law) | `T = 2π * sqrt(r³ / GM)` → hours |
+| Escape velocity | `v_esc = sqrt(2GM / r)` → km/s |
+
+Where *G* = 6.67430 × 10⁻¹¹ m³ kg⁻¹ s⁻² (CODATA 2018).
+
+## Data Sources
+
+| Constant | Value | Source |
+|---|---|---|
+| *G* | 6.67430 × 10⁻¹¹ m³ kg⁻¹ s⁻² | CODATA 2018 |
+| AU | 149,597,870,700 m (exact) | IAU 2012 Resolution B2 |
+| Solar mass | 1.98892 × 10³⁰ kg | IAU 2015 Resolution B3 |
+| Earth mass | 5.9722 × 10²⁴ kg | NASA Earth fact sheet (2024) |
+| Planetary semi-major axes | — | JPL Horizons, epoch J2000.0 |
+| Moon distance | 384,400,000 m | NASA Moon fact sheet (2024) |
+| Earth radius | 6,371,000 m | NASA Earth fact sheet (2024) |
+| ISS altitude | 408,000 m | NASA (~2024-Q1 mean) |
+
+## Assumptions and Limitations
+- All orbits are modeled as circular; eccentricity and perturbations are ignored.
+- Moon orbital radius is the semi-major axis. Actual range: 356,500–406,700 km (e ≈ 0.0549).
+- ISS altitude is an approximate mean as of 2024-Q1. The orbit decays ~2 km/year without reboosts.
+- Earth-Mars midpoint uses a perihelion/aphelion lower-bound separation — a heuristic, not an actual conjunction distance.
+- Mars base section is conceptual and intentionally marked as `TBD` for undecided parameters.
+- No uncertainty propagation or confidence intervals.
 
 ## CLI Usage
+
 Run full text report:
 ```bash
 python3 main.py
@@ -49,27 +65,28 @@ Arguments:
 - `--output`: optional file path; if omitted, output is printed to stdout
 
 ## Reproducibility and QA
-Run tests:
+
+Run all tests:
 ```bash
 python3 -m unittest discover -s tests
 ```
 
-Current coverage areas:
-- Physics calculation sanity and invalid input rejection
-- Source data integrity and derived-distance consistency
-- CLI section routing and output format behavior
+Run a single suite:
+```bash
+python3 -m unittest tests.test_calculations
+```
 
-## Limitations
-- Circular orbits are an approximation and ignore eccentricity and perturbations.
-- No uncertainty propagation, confidence intervals, or stochastic modeling yet.
-- Mars base section is conceptual and intentionally marked as `TBD` for undecided parameters.
+Test coverage areas:
+- Physics calculations: orbital velocity, orbital period, escape velocity, invalid input rejection
+- Source data integrity and derived-distance consistency
+- Report record counts, JSON schema contract, CSV format contract
+- Full pipeline integration (`all` section, JSON format)
+- CLI section routing and output format behavior
 
 ## Project Structure
 - `main.py`: CLI entrypoint and output routing
-- `constants.py`: Physical constants and reference values
-- `data.py`: Orbital datasets and derived distances
-- `calculations.py`: Core formulas and unit conversions
+- `constants.py`: Physical constants and reference values with source citations
+- `data.py`: Orbital datasets as typed NamedTuples (`OrbitalBody`, `ConceptStation`)
+- `calculations.py`: Core formulas — orbital velocity, period, and escape velocity
 - `report.py`: Record construction and output renderers (`text/json/csv`)
-- `tests/test_calculations.py`: Calculation tests
-- `tests/test_data.py`: Data consistency tests
-- `tests/test_main.py`: CLI and output format tests
+- `tests/`: Four test modules covering calculations, data, report contracts, and CLI
