@@ -37,8 +37,15 @@ EARTH_ORBITS = [
 
 ISS_TO_MOON_DISTANCE = MOON_ORBITAL_RADIUS - (EARTH_RADIUS + ISS_ALTITUDE)
 
-EARTH_ORBITAL_RADIUS = PLANETS[2].orbital_radius_m
-MARS_ORBITAL_RADIUS = PLANETS[3].orbital_radius_m
+def _find_planet(name: str) -> OrbitalBody:
+    for body in PLANETS:
+        if body.name == name:
+            return body
+    raise ValueError(f"Planet '{name}' not found in PLANETS list")
+
+
+EARTH_ORBITAL_RADIUS = _find_planet("Earth").orbital_radius_m
+MARS_ORBITAL_RADIUS = _find_planet("Mars").orbital_radius_m
 
 # Lower-bound separation: Mars at perihelion (e=0.0934), Earth at aphelion (e=0.0167086).
 # A coplanar heuristic — not actual minimum conjunction distance.

@@ -4,8 +4,10 @@ from constants import AU, EARTH_MASS, EARTH_RADIUS, ISS_ALTITUDE, MOON_ORBITAL_R
 from data import (
     CONCEPT_STATIONS,
     EARTH_MARS_MIN_SEPARATION_LOWER_BOUND,
+    EARTH_ORBITAL_RADIUS,
     EARTH_ORBITS,
     ISS_TO_MOON_DISTANCE,
+    MARS_ORBITAL_RADIUS,
     PLANETS,
 )
 
@@ -49,10 +51,15 @@ class TestData(unittest.TestCase):
         self.assertGreater(earth_mars.distance_m, 0)
 
     def test_earth_planet_distance_close_to_one_au(self):
-        earth = PLANETS[2]
-        self.assertEqual(earth.name, "Earth")
+        earth = next(p for p in PLANETS if p.name == "Earth")
         self.assertEqual(earth.central_mass_kg, SUN_MASS)
         self.assertAlmostEqual(earth.orbital_radius_m / AU, 1.0, places=3)
+
+    def test_earth_and_mars_orbital_radii_named_correctly(self):
+        earth = next(p for p in PLANETS if p.name == "Earth")
+        mars = next(p for p in PLANETS if p.name == "Mars")
+        self.assertEqual(EARTH_ORBITAL_RADIUS, earth.orbital_radius_m)
+        self.assertEqual(MARS_ORBITAL_RADIUS, mars.orbital_radius_m)
 
 
 if __name__ == "__main__":

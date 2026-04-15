@@ -68,6 +68,16 @@ class TestReportContracts(unittest.TestCase):
         self.assertEqual(rows[0]["section"], "concepts")
         self.assertTrue(rows[0]["label"].startswith("Concept station"))
 
+    def test_csv_none_exported_as_empty_field(self):
+        csv_text = render_report("mars-base", "csv")
+        reader = csv.DictReader(io.StringIO(csv_text))
+        rows = list(reader)
+        for row in rows:
+            self.assertNotEqual(
+                row["value_num"], "None",
+                "value_num None must export as empty string, not the string 'None'",
+            )
+
     def test_invalid_section_raises_value_error(self):
         with self.assertRaises(ValueError):
             collect_records("asteroids")

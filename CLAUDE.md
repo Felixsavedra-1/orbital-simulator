@@ -37,7 +37,7 @@ The project is a deterministic orbital mechanics reporting engine with a strict 
 main.py         CLI entrypoint — parses args, routes to render_report()
 report.py       Orchestration layer — renderers (text/JSON/CSV) and collect_records()
 data.py         Orbital datasets — planets, Earth orbits, concept stations
-calculations.py Core physics — calculate_orbital_velocity(), meters_to_km()
+calculations.py Core physics — calculate_orbital_velocity(), calculate_orbital_period(), calculate_escape_velocity(), meters_to_km()
 constants.py    Physical constants — G, AU, SUN_MASS, EARTH_MASS, ISS_ALTITUDE, etc.
 ```
 
@@ -45,7 +45,7 @@ constants.py    Physical constants — G, AU, SUN_MASS, EARTH_MASS, ISS_ALTITUDE
 
 **`MetricRecord` dataclass** (defined in `report.py`) is the universal currency between data collection and rendering. Fields: `section`, `label`, `value` (formatted string), `value_num` (float for machine use), `unit`, `note`.
 
-**Record counts are load-bearing** — `test_report.py` asserts exact totals (21 records: 8 planets, 3 earth, 2 concepts, 8 mars-base). Adding or removing records requires updating those assertions.
+**Record counts are load-bearing** — `test_report.py` asserts exact totals (31 records: 16 planets [8 velocity + 8 period], 5 earth [2 velocity + 2 period + 1 ISS distance], 2 concepts, 8 mars-base). Adding or removing records requires updating those assertions.
 
 **Physics:** All orbital velocities use the circular orbit approximation v = sqrt(GM/r). `calculate_orbital_velocity()` takes radius in meters and central mass in kg, returns km/s. It raises `ValueError` for non-physical inputs (zero or negative radius/mass).
 

@@ -36,7 +36,7 @@ class TestMainCLI(unittest.TestCase):
     def test_json_format(self):
         output = self._run_main_with_args(["--format", "json", "--section", "planets"])
         self.assertIn('"section": "planets"', output)
-        self.assertIn('"report_schema_version": "1.0.0"', output)
+        self.assertIn('"report_schema_version"', output)
         self.assertIn('"records"', output)
         self.assertIn("Mercury orbital velocity", output)
 

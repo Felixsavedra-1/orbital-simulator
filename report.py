@@ -12,7 +12,7 @@ LABEL_WIDTH = 36
 VALUE_WIDTH = 14
 
 REPORT_TITLE = "PLANET ORBITAL SIMULATION & SPACE EXPLORATION GUIDE"
-REPORT_SCHEMA_VERSION = "1.0.0"
+REPORT_SCHEMA_VERSION = "1.1.0"
 SECTION_ORDER = ["planets", "earth", "concepts", "mars-base"]
 VALID_SECTIONS = ["all", *SECTION_ORDER]
 VALID_OUTPUT_FORMATS = ["text", "json", "csv"]
@@ -22,6 +22,11 @@ SECTION_TITLES = {
     "concepts": "CONCEPT STATIONS",
     "mars-base": "MARS BASE CONCEPT",
 }
+
+# Period-scaling thresholds used by _format_period()
+_PERIOD_YEARS_THRESHOLD_DAYS = 730   # ≥730 days (~2 years) → display as Earth years
+_PERIOD_DAYS_THRESHOLD_DAYS  = 2     # ≥2 days → display as Earth days
+_PERIOD_HOURS_THRESHOLD_HRS  = 1     # ≥1 hour → display as hours; else minutes
 
 
 @dataclass
@@ -37,64 +42,49 @@ class MetricRecord:
 def _format_period(period_hours: float) -> tuple[str, str]:
     """Scale a period to a human-readable (value_str, unit_str) pair."""
     period_days = period_hours / 24
-    if period_days >= 730:
+    if period_days >= _PERIOD_YEARS_THRESHOLD_DAYS:
         return f"{period_days / 365.25:.1f}", "Earth years"
-    elif period_days >= 2:
+    elif period_days >= _PERIOD_DAYS_THRESHOLD_DAYS:
         return f"{period_days:.1f}", "Earth days"
-    elif period_hours >= 1:
+    elif period_hours >= _PERIOD_HOURS_THRESHOLD_HRS:
         return f"{period_hours:.1f}", "hours"
     else:
         return f"{period_hours * 60:.0f}", "minutes"
 
 
-def _planet_velocity_records() -> list[MetricRecord]:
+def _body_orbit_records(section: str, bodies) -> list[MetricRecord]:
+    """Build velocity + period MetricRecords for a list of orbital bodies."""
     records = []
-    for body in PLANETS:
+    for body in bodies:
         velocity_km = calculate_orbital_velocity(body.orbital_radius_m, body.central_mass_kg)
         records.append(MetricRecord(
-            section="planets",
+            section=section,
             label=f"{body.name} orbital velocity",
             value=f"{velocity_km:.2f}",
             value_num=round(velocity_km, 2),
             unit="km/s",
+            note=getattr(body, "body_type", ""),
         ))
 
         period_hours = calculate_orbital_period(body.orbital_radius_m, body.central_mass_kg)
         period_value, period_unit = _format_period(period_hours)
         records.append(MetricRecord(
-            section="planets",
+            section=section,
             label=f"{body.name} orbital period",
             value=period_value,
-            value_num=round(float(period_value), 1),
+            value_num=round(period_hours, 4),  # always hours for machine use
             unit=period_unit,
+            note=getattr(body, "body_type", ""),
         ))
     return records
 
 
+def _planet_velocity_records() -> list[MetricRecord]:
+    return _body_orbit_records("planets", PLANETS)
+
+
 def _earth_orbit_records() -> list[MetricRecord]:
-    records = []
-    for body in EARTH_ORBITS:
-        velocity_km = calculate_orbital_velocity(body.orbital_radius_m, body.central_mass_kg)
-        records.append(MetricRecord(
-            section="earth",
-            label=f"{body.name} orbital velocity",
-            value=f"{velocity_km:.2f}",
-            value_num=round(velocity_km, 2),
-            unit="km/s",
-            note=body.body_type,
-        ))
-
-        period_hours = calculate_orbital_period(body.orbital_radius_m, body.central_mass_kg)
-        period_value, period_unit = _format_period(period_hours)
-        records.append(MetricRecord(
-            section="earth",
-            label=f"{body.name} orbital period",
-            value=period_value,
-            value_num=round(float(period_value), 1),
-            unit=period_unit,
-            note=body.body_type,
-        ))
-
+    records = _body_orbit_records("earth", EARTH_ORBITS)
     iss_to_moon_km = meters_to_km(ISS_TO_MOON_DISTANCE)
     records.append(MetricRecord(
         section="earth",
@@ -212,9 +202,14 @@ def render_csv(section: str) -> str:
     writer = csv.writer(output)
     writer.writerow(["section", "label", "value", "value_num", "unit", "note"])
     for record in records:
-        writer.writerow(
-            [record.section, record.label, record.value, record.value_num, record.unit, record.note]
-        )
+        writer.writerow([
+            record.section,
+            record.label,
+            record.value,
+            "" if record.value_num is None else record.value_num,
+            record.unit,
+            record.note,
+        ])
     return output.getvalue().rstrip("\n")
 
 
