@@ -23,11 +23,6 @@ SECTION_TITLES = {
     "mars-base": "MARS BASE CONCEPT",
 }
 
-# Period-scaling thresholds used by _format_period()
-_PERIOD_YEARS_THRESHOLD_DAYS = 730   # ≥730 days (~2 years) → display as Earth years
-_PERIOD_DAYS_THRESHOLD_DAYS  = 2     # ≥2 days → display as Earth days
-_PERIOD_HOURS_THRESHOLD_HRS  = 1     # ≥1 hour → display as hours; else minutes
-
 
 @dataclass
 class MetricRecord:
@@ -41,15 +36,14 @@ class MetricRecord:
 
 def _format_period(period_hours: float) -> tuple[str, str]:
     """Scale a period to a human-readable (value_str, unit_str) pair."""
-    period_days = period_hours / 24
-    if period_days >= _PERIOD_YEARS_THRESHOLD_DAYS:
-        return f"{period_days / 365.25:.1f}", "Earth years"
-    elif period_days >= _PERIOD_DAYS_THRESHOLD_DAYS:
-        return f"{period_days:.1f}", "Earth days"
-    elif period_hours >= _PERIOD_HOURS_THRESHOLD_HRS:
+    days = period_hours / 24
+    if days >= 730:
+        return f"{days / 365.25:.1f}", "Earth years"
+    if days >= 2:
+        return f"{days:.1f}", "Earth days"
+    if period_hours >= 1:
         return f"{period_hours:.1f}", "hours"
-    else:
-        return f"{period_hours * 60:.0f}", "minutes"
+    return f"{period_hours * 60:.0f}", "minutes"
 
 
 def _body_orbit_records(section: str, bodies) -> list[MetricRecord]:
@@ -63,7 +57,7 @@ def _body_orbit_records(section: str, bodies) -> list[MetricRecord]:
             value=f"{velocity_km:.2f}",
             value_num=round(velocity_km, 2),
             unit="km/s",
-            note=getattr(body, "body_type", ""),
+            note=body.body_type,
         ))
 
         period_hours = calculate_orbital_period(body.orbital_radius_m, body.central_mass_kg)
@@ -74,7 +68,7 @@ def _body_orbit_records(section: str, bodies) -> list[MetricRecord]:
             value=period_value,
             value_num=round(period_hours, 4),  # always hours for machine use
             unit=period_unit,
-            note=getattr(body, "body_type", ""),
+            note=body.body_type,
         ))
     return records
 
@@ -160,11 +154,14 @@ def render_text(section: str) -> str:
     lines = [f"--{REPORT_TITLE}--", "Project Summary: orbital data and conceptual mission planning"]
     active_sections = SECTION_ORDER if section == "all" else [section]
 
+    by_section: dict[str, list[MetricRecord]] = {s: [] for s in active_sections}
+    for r in records:
+        by_section[r.section].append(r)
+
     for section_name in active_sections:
         lines.append(f"--{SECTION_TITLES[section_name]}--")
-        for record in records:
-            if record.section == section_name:
-                lines.append(_format_text_metric(record))
+        lines.extend(_format_text_metric(r) for r in by_section[section_name])
+
     return "\n".join(lines)
 
 
@@ -214,12 +211,13 @@ def render_csv(section: str) -> str:
 
 
 def render_report(section: str, output_format: str) -> str:
-    """Validate inputs and dispatch to the appropriate renderer.
+    """Validate output_format and dispatch to the appropriate renderer.
+    Section validation is enforced by collect_records.
 
     Raises:
-        ValueError: If section or output_format is invalid.
+        ValueError: If output_format is invalid, or if section is invalid
+                    (raised by collect_records via the renderer).
     """
-    _validate_section(section)
     _validate_output_format(output_format)
 
     renderers = {

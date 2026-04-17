@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Solar System — 3D Simulation</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: #000; overflow: hidden; }
+
+    #ui {
+      position: absolute;
+      top: 16px;
+      left: 16px;
+      color: rgba(255, 255, 255, 0.55);
+      font: 11px/2 'Courier New', monospace;
+      pointer-events: none;
+      letter-spacing: 0.04em;
+    }
+    #ui strong {
+      color: rgba(255, 255, 255, 0.85);
+      font-size: 13px;
+    }
+
+    #controls {
+      position: absolute;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      color: rgba(255, 255, 255, 0.6);
+      font: 11px 'Courier New', monospace;
+      letter-spacing: 0.05em;
+    }
+    input[type=range] {
+      -webkit-appearance: none;
+      width: 200px;
+      height: 2px;
+      background: rgba(255,255,255,0.25);
+      border-radius: 2px;
+      outline: none;
+      cursor: pointer;
+    }
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.85);
+      cursor: pointer;
+    }
+
+    #label-layer {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+    }
+    .plabel {
+      position: absolute;
+      color: rgba(255, 255, 255, 0.5);
+      font: 9px/1 'Courier New', monospace;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      transform: translateX(-50%);
+      white-space: nowrap;
+      transition: opacity 0.2s;
+    }
+  </style>
+</head>
+<body>
+
+<div id="ui">
+  <strong>SOLAR SYSTEM</strong><br>
+  Drag to orbit &nbsp;·&nbsp; Scroll to zoom &nbsp;·&nbsp; Right-drag to pan<br>
+  Orbital speeds: Kepler's third law (T ∝ a<sup>3/2</sup>)<br>
+  Distances: compressed scale (AU<sup>0.52</sup>)
+</div>
+
+<div id="controls">
+  <span>SPEED</span>
+  <input type="range" id="speed" min="0" max="6" step="0.05" value="1">
+  <span id="speedVal">1.00×</span>
+</div>
+
+<div id="label-layer"></div>
+
+<script src="https://unpkg.com/three@0.128.0/build/three.min.js"></script>
+<script src="https://unpkg.com/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script>
+'use strict';
+
+// ── Renderer ─────────────────────────────────────────────────────────────────
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.setSize(window.innerWidth, window.innerHeight);
+document.body.appendChild(renderer.domElement);
+
+// ── Scene / Camera ───────────────────────────────────────────────────────────
+const scene  = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 80000);
+camera.position.set(0, 220, 520);
+
+const controls = new THREE.OrbitControls(camera, renderer.domElement);
+controls.enableDamping  = true;
+controls.dampingFactor  = 0.06;
+controls.minDistance    = 20;
+controls.maxDistance    = 5000;
+
+// ── Lighting ─────────────────────────────────────────────────────────────────
+scene.add(new THREE.AmbientLight(0x11152a, 1.2));
+const sunLight = new THREE.PointLight(0xfff4cc, 2.8, 4000, 1.2);
+scene.add(sunLight);
+
+// ── Starfield ────────────────────────────────────────────────────────────────
+(function () {
+  const n   = 14000;
+  const pos = new Float32Array(n * 3);
+  for (let i = 0; i < n * 3; i++) pos[i] = (Math.random() - 0.5) * 30000;
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  scene.add(new THREE.Points(geo, new THREE.PointsMaterial({ color: 0xffffff, size: 1.0 })));
+})();
+
+// ── Planet catalogue (JPL Horizons J2000.0 semi-major axes) ─────────────────
+//   orbitAU : semi-major axis in AU
+//   period  : sidereal orbital period in Earth years
+//   radius  : visual radius (NOT to scale — exaggerated for visibility)
+//   color   : approximate surface colour
+//   rings   : Saturn ring flag
+const PLANETS = [
+  { name: 'Mercury', orbitAU: 0.38709927, period: 0.2408467, radius: 1.0,  color: 0xaaaaaa },
+  { name: 'Venus',   orbitAU: 0.72333566, period: 0.6151973, radius: 1.8,  color: 0xddb96e },
+  { name: 'Earth',   orbitAU: 1.00000261, period: 1.0000174, radius: 1.9,  color: 0x2f6ab3 },
+  { name: 'Mars',    orbitAU: 1.52371034, period: 1.8808476, radius: 1.2,  color: 0xb5400a },
+  { name: 'Jupiter', orbitAU: 5.20288700, period: 11.862615, radius: 6.0,  color: 0xc88b3a },
+  { name: 'Saturn',  orbitAU: 9.53667594, period: 29.447498, radius: 5.2,  color: 0xe4d191, rings: true },
+  { name: 'Uranus',  orbitAU: 19.1891646, period: 84.016846, radius: 3.5,  color: 0x9bc4e2 },
+  { name: 'Neptune', orbitAU: 30.0699228, period: 164.79132, radius: 3.3,  color: 0x3e52ba },
+];
+
+// Compressed orbital scale so all planets fit the view
+const auToUnits = (au) => Math.pow(au, 0.52) * 65;
+
+// ── Sun ───────────────────────────────────────────────────────────────────────
+const SUN_RADIUS = 14;
+const sunMesh = new THREE.Mesh(
+  new THREE.SphereGeometry(SUN_RADIUS, 64, 64),
+  new THREE.MeshBasicMaterial({ color: 0xffdd44 })
+);
+scene.add(sunMesh);
+
+// Corona halo
+scene.add(new THREE.Mesh(
+  new THREE.SphereGeometry(SUN_RADIUS * 1.55, 32, 32),
+  new THREE.MeshBasicMaterial({ color: 0xff8800, transparent: true, opacity: 0.14, side: THREE.BackSide })
+));
+scene.add(new THREE.Mesh(
+  new THREE.SphereGeometry(SUN_RADIUS * 2.0, 32, 32),
+  new THREE.MeshBasicMaterial({ color: 0xff4400, transparent: true, opacity: 0.05, side: THREE.BackSide })
+));
+
+// ── Orbit path ────────────────────────────────────────────────────────────────
+function makeOrbitRing(r) {
+  const pts = [];
+  for (let i = 0; i <= 360; i++) {
+    const a = (i / 360) * Math.PI * 2;
+    pts.push(new THREE.Vector3(Math.cos(a) * r, 0, Math.sin(a) * r));
+  }
+  return new THREE.Line(
+    new THREE.BufferGeometry().setFromPoints(pts),
+    new THREE.LineBasicMaterial({ color: 0x2a3a4a, transparent: true, opacity: 0.7 })
+  );
+}
+
+// ── Saturn ring disc ─────────────────────────────────────────────────────────
+function makeSaturnRings(planetR) {
+  const group = new THREE.Group();
+
+  // Inner bright ring
+  const r1 = new THREE.Mesh(
+    new THREE.RingGeometry(planetR * 1.35, planetR * 1.95, 128),
+    new THREE.MeshBasicMaterial({ color: 0xd4b87a, side: THREE.DoubleSide, transparent: true, opacity: 0.85 })
+  );
+
+  // Outer faint ring
+  const r2 = new THREE.Mesh(
+    new THREE.RingGeometry(planetR * 2.0, planetR * 2.75, 128),
+    new THREE.MeshBasicMaterial({ color: 0xb8975a, side: THREE.DoubleSide, transparent: true, opacity: 0.45 })
+  );
+
+  group.add(r1, r2);
+  group.rotation.x = Math.PI / 2;   // lay flat in XZ plane
+  group.rotation.z = 0.46;          // ~26° tilt (Saturn's axial tilt)
+  return group;
+}
+
+// ── Build planet objects ──────────────────────────────────────────────────────
+const planetObjects = PLANETS.map((d) => {
+  const orbitR = auToUnits(d.orbitAU);
+  scene.add(makeOrbitRing(orbitR));
+
+  const mesh = new THREE.Mesh(
+    new THREE.SphereGeometry(d.radius, 48, 48),
+    new THREE.MeshPhongMaterial({ color: d.color, shininess: 12, specular: 0x222222 })
+  );
+  mesh.position.x = orbitR;
+
+  if (d.rings) mesh.add(makeSaturnRings(d.radius));
+
+  // Pivot rotates to produce the orbit
+  const pivot = new THREE.Object3D();
+  pivot.rotation.y = Math.random() * Math.PI * 2;  // random start angle
+  pivot.add(mesh);
+  scene.add(pivot);
+
+  return { mesh, pivot, orbitR, period: d.period, name: d.name };
+});
+
+// ── Planet labels ────────────────────────────────────────────────────────────
+const labelLayer = document.getElementById('label-layer');
+const labelEls = planetObjects.map(({ name }) => {
+  const el = document.createElement('div');
+  el.className = 'plabel';
+  el.textContent = name;
+  labelLayer.appendChild(el);
+  return el;
+});
+
+// ── Speed control ─────────────────────────────────────────────────────────────
+const speedInput = document.getElementById('speed');
+const speedLabel = document.getElementById('speedVal');
+speedInput.addEventListener('input', () => {
+  speedLabel.textContent = parseFloat(speedInput.value).toFixed(2) + '×';
+});
+
+// ── Resize ────────────────────────────────────────────────────────────────────
+window.addEventListener('resize', () => {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
+
+// ── Animation loop ────────────────────────────────────────────────────────────
+// BASE_RATE: Earth orbital angular velocity in radians per frame at 1× speed.
+// At 60fps, 1× completes Earth's orbit in ~785 real seconds (~13 min).
+const BASE_RATE = 0.008;
+const worldPos  = new THREE.Vector3();
+
+function animate() {
+  requestAnimationFrame(animate);
+
+  const spd = parseFloat(speedInput.value);
+  const hw  = window.innerWidth  / 2;
+  const hh  = window.innerHeight / 2;
+
+  planetObjects.forEach((p, i) => {
+    // Angular velocity inversely proportional to period (Kepler)
+    p.pivot.rotation.y += (BASE_RATE / p.period) * spd;
+    p.mesh.rotation.y  += 0.006 * spd;   // axial spin
+
+    // Project to screen for label placement
+    p.mesh.getWorldPosition(worldPos);
+    worldPos.project(camera);
+    const sx = (worldPos.x + 1) * hw;
+    const sy = (-worldPos.y + 1) * hh;
+    labelEls[i].style.left    = sx + 'px';
+    labelEls[i].style.top     = (sy - p.mesh.geometry.parameters.radius * 2 - 6) + 'px';
+    labelEls[i].style.opacity = worldPos.z < 1 ? '1' : '0';
+  });
+
+  sunMesh.rotation.y += 0.001 * Math.max(spd, 0.1);
+
+  controls.update();
+  renderer.render(scene, camera);
+}
+
+animate();
+</script>
+</body>
+</html>

@@ -49,9 +49,8 @@ MARS_ORBITAL_RADIUS = _find_planet("Mars").orbital_radius_m
 
 # Lower-bound separation: Mars at perihelion (e=0.0934), Earth at aphelion (e=0.0167086).
 # A coplanar heuristic — not actual minimum conjunction distance.
-EARTH_MARS_MIN_SEPARATION_LOWER_BOUND = max(
-    0.0,
-    MARS_ORBITAL_RADIUS * (1 - 0.0934) - EARTH_ORBITAL_RADIUS * (1 + 0.0167086),
+EARTH_MARS_MIN_SEPARATION_LOWER_BOUND = (
+    MARS_ORBITAL_RADIUS * (1 - 0.0934) - EARTH_ORBITAL_RADIUS * (1 + 0.0167086)
 )
 
 CONCEPT_STATIONS = [

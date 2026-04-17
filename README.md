@@ -1,92 +1,102 @@
-# Orbital Simulation Report Engine
+# Orbital Simulation
 
-A deterministic orbital mechanics reporting tool for technical review, academic submission, and institutional analysis workflows.
+Physics-based orbital mechanics engine for all 8 planets — with a live 3D animation driven by the same data.
 
-## What It Produces
-- Orbital velocity and period for Mercury through Neptune
-- Earth orbital system metrics for Moon and ISS (velocity, period, and separation distance)
-- Concept station distances for Earth-Moon and Earth-Mars midpoints
-- Mars base concept fields for planning discussions
+## Visualization
 
-## Physics Reference
+```bash
+open solar_system.html        # macOS
+xdg-open solar_system.html   # Linux
+```
 
-All calculations use the circular orbit approximation. For a body of mass *M* with an orbiting body at radius *r*:
+Or double-click `solar_system.html` in Finder.
 
-| Quantity | Formula |
+The animation is powered entirely by this project's data: JPL Horizons semi-major axes from `data.py`, orbital speeds computed from Kepler's third law in `calculations.py`. No separate dataset — same numbers, rendered in 3D.
+
+| Control | Action |
 |---|---|
-| Orbital velocity | `v = sqrt(GM / r)` → km/s |
-| Orbital period (Kepler's third law) | `T = 2π * sqrt(r³ / GM)` → hours |
-| Escape velocity | `v_esc = sqrt(2GM / r)` → km/s |
+| Drag | Orbit camera |
+| Scroll | Zoom |
+| Right-drag | Pan |
+| Speed slider | 0× pause → 6× fast-forward |
 
-Where *G* = 6.67430 × 10⁻¹¹ m³ kg⁻¹ s⁻² (CODATA 2018).
+Requires internet (Three.js via CDN). No Python or build step needed.
+
+---
+
+## Report Engine
+
+```bash
+python3 main.py                                           # full report, text
+python3 main.py --section planets                         # one section
+python3 main.py --format json --output report.json        # machine-readable
+python3 main.py --format csv  --output report.csv
+```
+
+| Flag | Options |
+|---|---|
+| `--section` | `all` · `planets` · `earth` · `concepts` · `mars-base` |
+| `--format` | `text` · `json` · `csv` |
+| `--output` | file path — omit to print to stdout |
+
+---
+
+## Physics
+
+Circular orbit approximation throughout.
+
+| Quantity | Formula | Unit |
+|---|---|---|
+| Orbital velocity | `v = √(GM / r)` | km/s |
+| Orbital period | `T = 2π √(r³ / GM)` | hours |
+| Escape velocity | `v_esc = √(2GM / r)` | km/s |
+
+*G* = 6.67430 × 10⁻¹¹ m³ kg⁻¹ s⁻² (CODATA 2018)
+
+---
 
 ## Data Sources
 
-| Constant | Value | Source |
-|---|---|---|
-| *G* | 6.67430 × 10⁻¹¹ m³ kg⁻¹ s⁻² | CODATA 2018 |
-| AU | 149,597,870,700 m (exact) | IAU 2012 Resolution B2 |
-| Solar mass | 1.98892 × 10³⁰ kg | IAU 2015 Resolution B3 |
-| Earth mass | 5.9722 × 10²⁴ kg | NASA Earth fact sheet (2024) |
-| Planetary semi-major axes | — | JPL Horizons, epoch J2000.0 |
-| Moon distance | 384,400,000 m | NASA Moon fact sheet (2024) |
-| Earth radius | 6,371,000 m | NASA Earth fact sheet (2024) |
-| ISS altitude | 408,000 m | NASA (~2024-Q1 mean) |
+| Quantity | Source |
+|---|---|
+| Gravitational constant *G* | CODATA 2018 |
+| Astronomical unit | IAU 2012 Resolution B2 |
+| Solar mass | IAU 2015 Resolution B3 |
+| Earth mass, radius, ISS altitude | NASA fact sheets (2024) |
+| Planetary semi-major axes | JPL Horizons, epoch J2000.0 |
+| Moon orbital radius | NASA Moon fact sheet (2024) |
 
-## Assumptions and Limitations
-- All orbits are modeled as circular; eccentricity and perturbations are ignored.
-- Moon orbital radius is the semi-major axis. Actual range: 356,500–406,700 km (e ≈ 0.0549).
-- ISS altitude is an approximate mean as of 2024-Q1. The orbit decays ~2 km/year without reboosts.
-- Earth-Mars midpoint uses a perihelion/aphelion lower-bound separation — a heuristic, not an actual conjunction distance.
-- Mars base section is conceptual and intentionally marked as `TBD` for undecided parameters.
-- No uncertainty propagation or confidence intervals.
+---
 
-## CLI Usage
+## Assumptions
 
-Run full text report:
+- Circular orbits — eccentricity and perturbations ignored
+- Moon radius is the semi-major axis; actual range 356,500–406,700 km (e ≈ 0.0549)
+- ISS altitude is a 2024-Q1 mean; decays ~2 km/year without reboosts
+- Earth-Mars midpoint is a perihelion/aphelion heuristic, not a true conjunction distance
+- Mars base parameters are intentionally TBD
+
+---
+
+## Tests
+
 ```bash
-python3 main.py
-```
-
-Run one section:
-```bash
-python3 main.py --section planets
-```
-
-Export machine-readable report:
-```bash
-python3 main.py --section earth --format json --output earth_report.json
-python3 main.py --section all --format csv --output full_report.csv
-```
-
-Arguments:
-- `--section`: `all`, `planets`, `earth`, `concepts`, `mars-base`
-- `--format`: `text`, `json`, `csv`
-- `--output`: optional file path; if omitted, output is printed to stdout
-
-## Reproducibility and QA
-
-Run all tests:
-```bash
-python3 -m unittest discover -s tests
-```
-
-Run a single suite:
-```bash
+python3 -m unittest discover -s tests     # all 48 tests
 python3 -m unittest tests.test_calculations
 ```
 
-Test coverage areas:
-- Physics calculations: orbital velocity, orbital period, escape velocity, invalid input rejection
-- Source data integrity and derived-distance consistency
-- Report record counts, JSON schema contract, CSV format contract
-- Full pipeline integration (`all` section, JSON format)
-- CLI section routing and output format behavior
+Covers: physics functions · invalid input rejection · data integrity · JSON schema contract · CSV format · record counts · full pipeline · CLI routing.
 
-## Project Structure
-- `main.py`: CLI entrypoint and output routing
-- `constants.py`: Physical constants and reference values with source citations
-- `data.py`: Orbital datasets as typed NamedTuples (`OrbitalBody`, `ConceptStation`)
-- `calculations.py`: Core formulas — orbital velocity, period, and escape velocity
-- `report.py`: Record construction and output renderers (`text/json/csv`)
-- `tests/`: Four test modules covering calculations, data, report contracts, and CLI
+---
+
+## Structure
+
+```
+calculations.py     orbital velocity, period, escape velocity
+constants.py        G, AU, solar/Earth mass, Moon/ISS data
+data.py             planet and orbit datasets (JPL J2000.0)
+report.py           record builder + text / JSON / CSV renderers
+main.py             CLI entrypoint
+solar_system.html   3D animation (Three.js, CDN)
+tests/              48 tests across 4 modules
+```

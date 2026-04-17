@@ -21,7 +21,7 @@ def parse_args():
     )
     parser.add_argument(
         "--output",
-        default="",
+        default=None,
         help="Optional output file path. If omitted, prints to stdout.",
     )
     return parser.parse_args()
@@ -31,7 +31,7 @@ def main():
     args = parse_args()
     report_body = render_report(args.section, args.format)
 
-    if args.output:
+    if args.output is not None:
         with open(args.output, "w", encoding="utf-8") as output_file:
             output_file.write(report_body + "\n")
         print(f"Report written to {args.output}")

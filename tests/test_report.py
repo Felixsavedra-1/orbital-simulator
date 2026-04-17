@@ -3,7 +3,7 @@ import io
 import json
 import unittest
 
-from report import REPORT_SCHEMA_VERSION, collect_records, render_report
+from report import REPORT_SCHEMA_VERSION, _format_period, collect_records, render_report
 
 
 class TestReportContracts(unittest.TestCase):
@@ -97,6 +97,33 @@ class TestReportContracts(unittest.TestCase):
         self.assertEqual(len(payload["records"]), 31)
         self.assertIn("data_sources", payload)
         self.assertIn("assumptions", payload)
+
+
+class TestFormatPeriod(unittest.TestCase):
+    def test_minutes_branch(self):
+        value, unit = _format_period(0.5)  # 30 minutes
+        self.assertEqual(value, "30")
+        self.assertEqual(unit, "minutes")
+
+    def test_exactly_one_hour(self):
+        value, unit = _format_period(1.0)
+        self.assertEqual(value, "1.0")
+        self.assertEqual(unit, "hours")
+
+    def test_exactly_two_days(self):
+        value, unit = _format_period(48.0)
+        self.assertEqual(value, "2.0")
+        self.assertEqual(unit, "Earth days")
+
+    def test_exactly_730_days(self):
+        value, unit = _format_period(730 * 24)  # 730 / 365.25 ≈ 2.0 years
+        self.assertEqual(value, "2.0")
+        self.assertEqual(unit, "Earth years")
+
+    def test_multi_year(self):
+        value, unit = _format_period(164.8 * 365.25 * 24)  # Neptune ~164.8 years
+        self.assertAlmostEqual(float(value), 164.8, delta=0.2)
+        self.assertEqual(unit, "Earth years")
 
 
 if __name__ == "__main__":

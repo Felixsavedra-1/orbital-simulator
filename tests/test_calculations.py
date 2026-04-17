@@ -5,6 +5,7 @@ from calculations import (
     calculate_escape_velocity,
     calculate_orbital_period,
     calculate_orbital_velocity,
+    meters_to_km,
 )
 from constants import EARTH_MASS, EARTH_RADIUS, G, SUN_MASS
 from data import EARTH_ORBITAL_RADIUS, MOON_ORBITAL_RADIUS
@@ -38,6 +39,10 @@ class TestOrbitalVelocity(unittest.TestCase):
         with self.assertRaises(ValueError):
             calculate_orbital_velocity(MOON_ORBITAL_RADIUS, 0)
 
+    def test_negative_mass_raises(self):
+        with self.assertRaises(ValueError):
+            calculate_orbital_velocity(MOON_ORBITAL_RADIUS, -1e24)
+
 
 class TestOrbitalPeriod(unittest.TestCase):
     def test_earth_around_sun(self):
@@ -54,9 +59,17 @@ class TestOrbitalPeriod(unittest.TestCase):
         with self.assertRaises(ValueError):
             calculate_orbital_period(0, EARTH_MASS)
 
+    def test_negative_radius_raises(self):
+        with self.assertRaises(ValueError):
+            calculate_orbital_period(-1e11, EARTH_MASS)
+
     def test_zero_mass_raises(self):
         with self.assertRaises(ValueError):
             calculate_orbital_period(MOON_ORBITAL_RADIUS, 0)
+
+    def test_negative_mass_raises(self):
+        with self.assertRaises(ValueError):
+            calculate_orbital_period(MOON_ORBITAL_RADIUS, -1e24)
 
 
 class TestEscapeVelocity(unittest.TestCase):
@@ -74,9 +87,28 @@ class TestEscapeVelocity(unittest.TestCase):
         with self.assertRaises(ValueError):
             calculate_escape_velocity(0, EARTH_MASS)
 
+    def test_negative_radius_raises(self):
+        with self.assertRaises(ValueError):
+            calculate_escape_velocity(-1e8, EARTH_MASS)
+
     def test_zero_mass_raises(self):
         with self.assertRaises(ValueError):
             calculate_escape_velocity(EARTH_RADIUS, 0)
+
+    def test_negative_mass_raises(self):
+        with self.assertRaises(ValueError):
+            calculate_escape_velocity(EARTH_RADIUS, -1e24)
+
+
+class TestMetersToKm(unittest.TestCase):
+    def test_basic(self):
+        self.assertAlmostEqual(meters_to_km(1000.0), 1.0)
+
+    def test_fractional(self):
+        self.assertAlmostEqual(meters_to_km(500.0), 0.5)
+
+    def test_zero(self):
+        self.assertEqual(meters_to_km(0.0), 0.0)
 
 
 if __name__ == "__main__":
