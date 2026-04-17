@@ -1,6 +1,6 @@
 from typing import NamedTuple
 
-from constants import AU, EARTH_MASS, EARTH_RADIUS, ISS_ALTITUDE, MOON_ORBITAL_RADIUS, SUN_MASS
+from constants import AU, EARTH_ECCENTRICITY, EARTH_MASS, EARTH_RADIUS, ISS_ALTITUDE, MARS_ECCENTRICITY, MOON_ORBITAL_RADIUS, SUN_MASS
 
 
 class OrbitalBody(NamedTuple):
@@ -47,10 +47,10 @@ def _find_planet(name: str) -> OrbitalBody:
 EARTH_ORBITAL_RADIUS = _find_planet("Earth").orbital_radius_m
 MARS_ORBITAL_RADIUS = _find_planet("Mars").orbital_radius_m
 
-# Lower-bound separation: Mars at perihelion (e=0.0934), Earth at aphelion (e=0.0167086).
-# A coplanar heuristic — not actual minimum conjunction distance.
+# Lower-bound separation: Mars at perihelion, Earth at aphelion (coplanar heuristic).
+# Not actual minimum conjunction distance; see constants.py for eccentricity sources.
 EARTH_MARS_MIN_SEPARATION_LOWER_BOUND = (
-    MARS_ORBITAL_RADIUS * (1 - 0.0934) - EARTH_ORBITAL_RADIUS * (1 + 0.0167086)
+    MARS_ORBITAL_RADIUS * (1 - MARS_ECCENTRICITY) - EARTH_ORBITAL_RADIUS * (1 + EARTH_ECCENTRICITY)
 )
 
 CONCEPT_STATIONS = [

@@ -13,9 +13,10 @@ from data import EARTH_ORBITAL_RADIUS, MOON_ORBITAL_RADIUS
 
 class TestOrbitalVelocity(unittest.TestCase):
     def test_earth_around_sun(self):
-        # ~29.78 km/s (NASA fact sheet)
+        # Circular-orbit formula gives ~29.79 km/s; NASA observed mean is 29.78 km/s.
+        # places=2 validates formula precision; elliptical deviation is documented.
         velocity_km = calculate_orbital_velocity(EARTH_ORBITAL_RADIUS, SUN_MASS)
-        self.assertAlmostEqual(velocity_km, 29.78, places=1)
+        self.assertAlmostEqual(velocity_km, 29.79, places=2)
 
     def test_moon_around_earth(self):
         # ~1.022 km/s (NASA Moon fact sheet)
@@ -42,6 +43,18 @@ class TestOrbitalVelocity(unittest.TestCase):
     def test_negative_mass_raises(self):
         with self.assertRaises(ValueError):
             calculate_orbital_velocity(MOON_ORBITAL_RADIUS, -1e24)
+
+    def test_nan_radius_raises(self):
+        with self.assertRaises(ValueError):
+            calculate_orbital_velocity(float("nan"), EARTH_MASS)
+
+    def test_inf_radius_raises(self):
+        with self.assertRaises(ValueError):
+            calculate_orbital_velocity(float("inf"), EARTH_MASS)
+
+    def test_nan_mass_raises(self):
+        with self.assertRaises(ValueError):
+            calculate_orbital_velocity(MOON_ORBITAL_RADIUS, float("nan"))
 
 
 class TestOrbitalPeriod(unittest.TestCase):

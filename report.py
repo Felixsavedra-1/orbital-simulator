@@ -34,10 +34,13 @@ class MetricRecord:
     note: str = ""
 
 
+_YEARS_THRESHOLD_DAYS = 730.0  # display in years for periods ≥ ~2 Earth years (730 days)
+
+
 def _format_period(period_hours: float) -> tuple[str, str]:
     """Scale a period to a human-readable (value_str, unit_str) pair."""
     days = period_hours / 24
-    if days >= 730:
+    if days >= _YEARS_THRESHOLD_DAYS:
         return f"{days / 365.25:.1f}", "Earth years"
     if days >= 2:
         return f"{days:.1f}", "Earth days"
@@ -122,6 +125,9 @@ def _mars_base_records() -> list[MetricRecord]:
 
 def collect_records(section: str) -> list[MetricRecord]:
     """Return ordered MetricRecords for the given section.
+
+    Records are ordered by section (matching SECTION_ORDER); renderers that
+    group by section rely on this ordering.
 
     Raises:
         ValueError: If section is not in VALID_SECTIONS.
@@ -225,7 +231,14 @@ def render_report(section: str, output_format: str) -> str:
         "json": render_json,
         "csv": render_csv,
     }
-    return renderers[output_format](section)
+    try:
+        return renderers[output_format](section)
+    except ValueError:
+        raise
+    except Exception as e:
+        raise RuntimeError(
+            f"Renderer '{output_format}' failed for section '{section}': {e}"
+        ) from e
 
 
 def _validate_section(section: str) -> None:

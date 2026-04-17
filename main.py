@@ -1,4 +1,5 @@
 import argparse
+import sys
 
 from report import VALID_OUTPUT_FORMATS, VALID_SECTIONS, render_report
 
@@ -32,8 +33,12 @@ def main():
     report_body = render_report(args.section, args.format)
 
     if args.output is not None:
-        with open(args.output, "w", encoding="utf-8") as output_file:
-            output_file.write(report_body + "\n")
+        try:
+            with open(args.output, "w", encoding="utf-8") as output_file:
+                output_file.write(report_body + "\n")
+        except (OSError, IOError) as e:
+            print(f"Error: could not write to '{args.output}': {e}", file=sys.stderr)
+            sys.exit(1)
         print(f"Report written to {args.output}")
     else:
         print(report_body)

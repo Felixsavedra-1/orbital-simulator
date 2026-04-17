@@ -38,7 +38,9 @@ class TestReportContracts(unittest.TestCase):
             self.assertIsInstance(record["section"], str)
             self.assertIsInstance(record["label"], str)
             self.assertIsInstance(record["value"], str)
-            self.assertIn(type(record["value_num"]), (int, float, type(None)))
+            self.assertTrue(
+                isinstance(record["value_num"], (int, float)) or record["value_num"] is None
+            )
             self.assertIsInstance(record["unit"], str)
             self.assertIsInstance(record["note"], str)
 
@@ -123,6 +125,16 @@ class TestFormatPeriod(unittest.TestCase):
     def test_multi_year(self):
         value, unit = _format_period(164.8 * 365.25 * 24)  # Neptune ~164.8 years
         self.assertAlmostEqual(float(value), 164.8, delta=0.2)
+        self.assertEqual(unit, "Earth years")
+
+    def test_below_years_threshold_is_days(self):
+        # 729.9 days is just under the 2-year threshold
+        value, unit = _format_period(729.9 * 24)
+        self.assertEqual(unit, "Earth days")
+
+    def test_at_years_threshold_is_years(self):
+        # 730.5 days is just over the 2-year threshold (365.25 * 2 = 730.5)
+        value, unit = _format_period(730.5 * 24)
         self.assertEqual(unit, "Earth years")
 
 

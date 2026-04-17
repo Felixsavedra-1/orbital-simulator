@@ -10,4 +10,8 @@ MOON_ORBITAL_RADIUS = 384_400_000.0  # m, NASA Moon fact sheet (2024)
 EARTH_RADIUS = 6_371_000.0  # m, volumetric mean, NASA Earth fact sheet (2024)
 ISS_ALTITUDE = 408_000.0    # m, approximate mean as of 2024-Q1; decays ~2 km/year
 
-DATA_VALIDATION_DATE = "2025-01-01"  # last verified against NASA/JPL/CODATA/IAU sources
+DATA_VALIDATION_DATE = "2025-01-01"  # last verified against NASA/JPL/CODATA/IAU sources; update manually when re-verified
+
+# Orbital eccentricities at epoch J2000.0, from JPL Horizons
+EARTH_ECCENTRICITY = 0.0167086   # NASA Earth fact sheet (2024)
+MARS_ECCENTRICITY  = 0.0934      # NASA Mars fact sheet (2024)
