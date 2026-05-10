@@ -9,20 +9,22 @@ from report import REPORT_SCHEMA_VERSION, _format_period, collect_records, rende
 class TestReportContracts(unittest.TestCase):
     def test_all_section_record_counts_and_order(self):
         # planets: 8 velocity + 8 period = 16
-        # earth:   2 velocity + 2 period + 1 distance = 5
+        # earth:   2 velocity + 2 period + 1 distance + 1 escape velocity = 6
         # concepts: 2
         # mars-base: 8
-        # total: 31
+        # transfers: 2 transfers × 3 records (departure, arrival, total) = 6
+        # total: 38
         records = collect_records("all")
         sections = [record.section for record in records]
 
-        self.assertEqual(len(records), 31)
+        self.assertEqual(len(records), 38)
         self.assertEqual(sections.count("planets"), 16)
-        self.assertEqual(sections.count("earth"), 5)
+        self.assertEqual(sections.count("earth"), 6)
         self.assertEqual(sections.count("concepts"), 2)
         self.assertEqual(sections.count("mars-base"), 8)
+        self.assertEqual(sections.count("transfers"), 6)
         self.assertEqual(records[0].label, "Mercury orbital velocity")
-        self.assertEqual(records[-1].label, "Mission duration")
+        self.assertEqual(records[-1].label, "Earth-Mars total Δv")
 
     def test_json_contract_shape_and_types(self):
         payload = json.loads(render_report("earth", "json"))
@@ -30,7 +32,7 @@ class TestReportContracts(unittest.TestCase):
         self.assertEqual(payload["report_schema_version"], REPORT_SCHEMA_VERSION)
         self.assertIn("generated_at_utc", payload)
         self.assertIsInstance(payload["records"], list)
-        self.assertEqual(len(payload["records"]), 5)
+        self.assertEqual(len(payload["records"]), 6)
 
         required_fields = {"section", "label", "value", "value_num", "unit", "note"}
         for record in payload["records"]:
@@ -96,7 +98,7 @@ class TestReportContracts(unittest.TestCase):
         payload = json.loads(raw)
         self.assertEqual(payload["report_schema_version"], REPORT_SCHEMA_VERSION)
         self.assertEqual(payload["section"], "all")
-        self.assertEqual(len(payload["records"]), 31)
+        self.assertEqual(len(payload["records"]), 38)
         self.assertIn("data_sources", payload)
         self.assertIn("assumptions", payload)
 
@@ -133,7 +135,7 @@ class TestFormatPeriod(unittest.TestCase):
         self.assertEqual(unit, "Earth days")
 
     def test_at_years_threshold_is_years(self):
-        # 730.5 days is just over the 2-year threshold (365.25 * 2 = 730.5)
+        # 730.5 days is just over the 730-day threshold (_YEARS_THRESHOLD_DAYS = 730.0)
         value, unit = _format_period(730.5 * 24)
         self.assertEqual(unit, "Earth years")
 

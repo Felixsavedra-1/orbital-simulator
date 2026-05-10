@@ -15,3 +15,5 @@ DATA_VALIDATION_DATE = "2025-01-01"  # last verified against NASA/JPL/CODATA/IAU
 # Orbital eccentricities at epoch J2000.0, from JPL Horizons
 EARTH_ECCENTRICITY = 0.0167086   # NASA Earth fact sheet (2024)
 MARS_ECCENTRICITY  = 0.0934      # NASA Mars fact sheet (2024)
+
+STANDARD_GRAVITY = 9.80665  # m/s², exact by BIPM/IAU definition; used in Tsiolkovsky Isp conversion

@@ -4,16 +4,22 @@ from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
 from io import StringIO
 
-from calculations import calculate_orbital_period, calculate_orbital_velocity, meters_to_km
-from constants import DATA_VALIDATION_DATE
-from data import CONCEPT_STATIONS, EARTH_ORBITS, ISS_TO_MOON_DISTANCE, PLANETS
+from calculations import (
+    calculate_escape_velocity,
+    calculate_hohmann_delta_v,
+    calculate_orbital_period,
+    calculate_orbital_velocity,
+    meters_to_km,
+)
+from constants import DATA_VALIDATION_DATE, EARTH_MASS, EARTH_RADIUS
+from data import CONCEPT_STATIONS, EARTH_ORBITS, ISS_TO_MOON_DISTANCE, PLANETS, TRANSFER_ORBITS
 
 LABEL_WIDTH = 36
 VALUE_WIDTH = 14
 
 REPORT_TITLE = "PLANET ORBITAL SIMULATION & SPACE EXPLORATION GUIDE"
-REPORT_SCHEMA_VERSION = "1.1.0"
-SECTION_ORDER = ["planets", "earth", "concepts", "mars-base"]
+REPORT_SCHEMA_VERSION = "1.2.0"
+SECTION_ORDER = ["planets", "earth", "concepts", "mars-base", "transfers"]
 VALID_SECTIONS = ["all", *SECTION_ORDER]
 VALID_OUTPUT_FORMATS = ["text", "json", "csv"]
 SECTION_TITLES = {
@@ -21,6 +27,7 @@ SECTION_TITLES = {
     "earth": "EARTH ORBITAL SYSTEMS",
     "concepts": "CONCEPT STATIONS",
     "mars-base": "MARS BASE CONCEPT",
+    "transfers": "HOHMANN TRANSFER ORBITS",
 }
 
 
@@ -90,6 +97,15 @@ def _earth_orbit_records() -> list[MetricRecord]:
         value_num=round(iss_to_moon_km, 0),
         unit="km",
     ))
+    esc_km = calculate_escape_velocity(EARTH_RADIUS, EARTH_MASS)
+    records.append(MetricRecord(
+        section="earth",
+        label="Earth escape velocity",
+        value=f"{esc_km:.2f}",
+        value_num=round(esc_km, 2),
+        unit="km/s",
+        note="From surface",
+    ))
     return records
 
 
@@ -123,6 +139,40 @@ def _mars_base_records() -> list[MetricRecord]:
     ]
 
 
+def _transfer_records() -> list[MetricRecord]:
+    records = []
+    for transfer in TRANSFER_ORBITS:
+        dv1, dv2 = calculate_hohmann_delta_v(
+            transfer.r1_m, transfer.r2_m, transfer.central_mass_kg
+        )
+        total = dv1 + dv2
+        records.append(MetricRecord(
+            section="transfers",
+            label=f"{transfer.name} departure Δv",
+            value=f"{dv1:.2f}",
+            value_num=round(dv1, 2),
+            unit="km/s",
+            note=transfer.note,
+        ))
+        records.append(MetricRecord(
+            section="transfers",
+            label=f"{transfer.name} arrival Δv",
+            value=f"{dv2:.2f}",
+            value_num=round(dv2, 2),
+            unit="km/s",
+            note=transfer.note,
+        ))
+        records.append(MetricRecord(
+            section="transfers",
+            label=f"{transfer.name} total Δv",
+            value=f"{total:.2f}",
+            value_num=round(total, 2),
+            unit="km/s",
+            note=transfer.note,
+        ))
+    return records
+
+
 def collect_records(section: str) -> list[MetricRecord]:
     """Return ordered MetricRecords for the given section.
 
@@ -138,6 +188,7 @@ def collect_records(section: str) -> list[MetricRecord]:
         "earth": _earth_orbit_records,
         "concepts": _concept_station_records,
         "mars-base": _mars_base_records,
+        "transfers": _transfer_records,
     }
     if section == "all":
         records = []

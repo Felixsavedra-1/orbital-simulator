@@ -16,6 +16,14 @@ class ConceptStation(NamedTuple):
     note: str = ""
 
 
+class TransferOrbit(NamedTuple):
+    name: str
+    r1_m: float
+    r2_m: float
+    central_mass_kg: float
+    note: str = ""
+
+
 # Semi-major axes (AU) from JPL Horizons, epoch J2000.0
 PLANET_SEMIMAJOR_AXIS_AU = [
     ("Mercury", 0.38709927),
@@ -37,6 +45,7 @@ EARTH_ORBITS = [
 
 ISS_TO_MOON_DISTANCE = MOON_ORBITAL_RADIUS - (EARTH_RADIUS + ISS_ALTITUDE)
 
+
 def _find_planet(name: str) -> OrbitalBody:
     for body in PLANETS:
         if body.name == name:
@@ -52,6 +61,9 @@ MARS_ORBITAL_RADIUS = _find_planet("Mars").orbital_radius_m
 EARTH_MARS_MIN_SEPARATION_LOWER_BOUND = (
     MARS_ORBITAL_RADIUS * (1 - MARS_ECCENTRICITY) - EARTH_ORBITAL_RADIUS * (1 + EARTH_ECCENTRICITY)
 )
+assert EARTH_MARS_MIN_SEPARATION_LOWER_BOUND > 0, (
+    f"EARTH_MARS_MIN_SEPARATION_LOWER_BOUND must be positive, got {EARTH_MARS_MIN_SEPARATION_LOWER_BOUND}"
+)
 
 CONCEPT_STATIONS = [
     ConceptStation(
@@ -63,5 +75,22 @@ CONCEPT_STATIONS = [
         "Earth-Mars midpoint",
         EARTH_MARS_MIN_SEPARATION_LOWER_BOUND / 2,
         "Based on perihelion/aphelion lower-bound Earth-Mars separation",
+    ),
+]
+
+TRANSFER_ORBITS = [
+    TransferOrbit(
+        name="LEO-Moon",
+        r1_m=EARTH_RADIUS + ISS_ALTITUDE,
+        r2_m=MOON_ORBITAL_RADIUS,
+        central_mass_kg=EARTH_MASS,
+        note="Low Earth orbit (ISS altitude) to lunar orbit",
+    ),
+    TransferOrbit(
+        name="Earth-Mars",
+        r1_m=EARTH_ORBITAL_RADIUS,
+        r2_m=MARS_ORBITAL_RADIUS,
+        central_mass_kg=SUN_MASS,
+        note="Earth heliocentric orbit to Mars heliocentric orbit",
     ),
 ]

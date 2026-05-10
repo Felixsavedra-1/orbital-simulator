@@ -36,7 +36,7 @@ def main():
         try:
             with open(args.output, "w", encoding="utf-8") as output_file:
                 output_file.write(report_body + "\n")
-        except (OSError, IOError) as e:
+        except OSError as e:
             print(f"Error: could not write to '{args.output}': {e}", file=sys.stderr)
             sys.exit(1)
         print(f"Report written to {args.output}")

@@ -3,12 +3,15 @@ import unittest
 
 from calculations import (
     calculate_escape_velocity,
+    calculate_hohmann_delta_v,
+    calculate_mass_ratio,
     calculate_orbital_period,
     calculate_orbital_velocity,
+    calculate_vis_viva_velocity,
     meters_to_km,
 )
-from constants import EARTH_MASS, EARTH_RADIUS, G, SUN_MASS
-from data import EARTH_ORBITAL_RADIUS, MOON_ORBITAL_RADIUS
+from constants import EARTH_MASS, EARTH_RADIUS, G, STANDARD_GRAVITY, SUN_MASS
+from data import EARTH_ORBITAL_RADIUS, MARS_ORBITAL_RADIUS, MOON_ORBITAL_RADIUS
 
 
 class TestOrbitalVelocity(unittest.TestCase):
@@ -122,6 +125,103 @@ class TestMetersToKm(unittest.TestCase):
 
     def test_zero(self):
         self.assertEqual(meters_to_km(0.0), 0.0)
+
+
+class TestVisVivaVelocity(unittest.TestCase):
+    def test_circular_orbit_matches_orbital_velocity(self):
+        r = EARTH_RADIUS + 408_000.0
+        self.assertAlmostEqual(
+            calculate_vis_viva_velocity(r, r, EARTH_MASS),
+            calculate_orbital_velocity(r, EARTH_MASS),
+            places=8,
+        )
+
+    def test_known_elliptical_value(self):
+        # r=2Re, a=3Re: v = sqrt(GM * (1/Re - 1/(3Re))) = sqrt(GM * 2/(3Re)) ≈ 6.46 km/s
+        v = calculate_vis_viva_velocity(2.0 * EARTH_RADIUS, 3.0 * EARTH_RADIUS, EARTH_MASS)
+        self.assertAlmostEqual(v, 6.46, places=1)
+
+    def test_zero_radius_raises(self):
+        with self.assertRaises(ValueError):
+            calculate_vis_viva_velocity(0.0, EARTH_RADIUS * 3, EARTH_MASS)
+
+    def test_negative_radius_raises(self):
+        with self.assertRaises(ValueError):
+            calculate_vis_viva_velocity(-1e7, EARTH_RADIUS * 3, EARTH_MASS)
+
+    def test_zero_semi_major_axis_raises(self):
+        with self.assertRaises(ValueError):
+            calculate_vis_viva_velocity(EARTH_RADIUS, 0.0, EARTH_MASS)
+
+    def test_negative_semi_major_axis_raises(self):
+        with self.assertRaises(ValueError):
+            calculate_vis_viva_velocity(EARTH_RADIUS, -1e7, EARTH_MASS)
+
+    def test_unphysical_discriminant_raises(self):
+        # r=3Re, a=Re: 2/(3Re) - 1/Re = -1/(3Re) < 0
+        with self.assertRaises(ValueError):
+            calculate_vis_viva_velocity(3.0 * EARTH_RADIUS, EARTH_RADIUS, EARTH_MASS)
+
+
+class TestHohmannDeltaV(unittest.TestCase):
+    def test_earth_to_mars_departure(self):
+        dv1, _ = calculate_hohmann_delta_v(EARTH_ORBITAL_RADIUS, MARS_ORBITAL_RADIUS, SUN_MASS)
+        self.assertAlmostEqual(dv1, 2.9, delta=0.1)
+
+    def test_earth_to_mars_arrival(self):
+        _, dv2 = calculate_hohmann_delta_v(EARTH_ORBITAL_RADIUS, MARS_ORBITAL_RADIUS, SUN_MASS)
+        self.assertAlmostEqual(dv2, 2.6, delta=0.1)
+
+    def test_ascending_transfer_both_positive(self):
+        dv1, dv2 = calculate_hohmann_delta_v(EARTH_ORBITAL_RADIUS, MARS_ORBITAL_RADIUS, SUN_MASS)
+        self.assertGreater(dv1, 0.0)
+        self.assertGreater(dv2, 0.0)
+
+    def test_equal_radii_zero_delta_v(self):
+        dv1, dv2 = calculate_hohmann_delta_v(EARTH_ORBITAL_RADIUS, EARTH_ORBITAL_RADIUS, SUN_MASS)
+        self.assertAlmostEqual(dv1, 0.0, places=8)
+        self.assertAlmostEqual(dv2, 0.0, places=8)
+
+    def test_returns_two_floats(self):
+        result = calculate_hohmann_delta_v(EARTH_ORBITAL_RADIUS, MARS_ORBITAL_RADIUS, SUN_MASS)
+        self.assertIsInstance(result, tuple)
+        self.assertEqual(len(result), 2)
+        self.assertIsInstance(result[0], float)
+        self.assertIsInstance(result[1], float)
+
+    def test_zero_r1_raises(self):
+        with self.assertRaises(ValueError):
+            calculate_hohmann_delta_v(0.0, MARS_ORBITAL_RADIUS, SUN_MASS)
+
+    def test_zero_r2_raises(self):
+        with self.assertRaises(ValueError):
+            calculate_hohmann_delta_v(EARTH_ORBITAL_RADIUS, 0.0, SUN_MASS)
+
+
+class TestMassRatio(unittest.TestCase):
+    def test_known_value(self):
+        # dv=9000 m/s, Isp=311s → exp(9000 / (311 * 9.80665))
+        ratio = calculate_mass_ratio(9000.0, 311.0)
+        self.assertAlmostEqual(ratio, math.exp(9000.0 / (311.0 * STANDARD_GRAVITY)), places=5)
+        self.assertAlmostEqual(ratio, 19.12, delta=0.1)
+
+    def test_zero_delta_v_returns_one(self):
+        self.assertAlmostEqual(calculate_mass_ratio(0.0, 311.0), 1.0, places=10)
+
+    def test_ratio_always_at_least_one(self):
+        self.assertGreaterEqual(calculate_mass_ratio(1000.0, 450.0), 1.0)
+
+    def test_negative_delta_v_raises(self):
+        with self.assertRaises(ValueError):
+            calculate_mass_ratio(-100.0, 311.0)
+
+    def test_zero_isp_raises(self):
+        with self.assertRaises(ValueError):
+            calculate_mass_ratio(9000.0, 0.0)
+
+    def test_negative_isp_raises(self):
+        with self.assertRaises(ValueError):
+            calculate_mass_ratio(9000.0, -311.0)
 
 
 if __name__ == "__main__":
