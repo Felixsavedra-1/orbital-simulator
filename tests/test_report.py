@@ -119,8 +119,9 @@ class TestFormatPeriod(unittest.TestCase):
         self.assertEqual(value, "2.0")
         self.assertEqual(unit, "Earth days")
 
-    def test_exactly_730_days(self):
-        value, unit = _format_period(730 * 24)  # 730 / 365.25 ≈ 2.0 years
+    def test_exactly_two_earth_years(self):
+        # 365.25 * 2 = 730.5 days — at the exact threshold, should display as years
+        value, unit = _format_period(730.5 * 24)  # 730.5 / 365.25 = 2.0 years exactly
         self.assertEqual(value, "2.0")
         self.assertEqual(unit, "Earth years")
 
@@ -130,13 +131,13 @@ class TestFormatPeriod(unittest.TestCase):
         self.assertEqual(unit, "Earth years")
 
     def test_below_years_threshold_is_days(self):
-        # 729.9 days is just under the 2-year threshold
-        value, unit = _format_period(729.9 * 24)
+        # 730.4 days is just under the 2-year threshold (365.25 * 2 = 730.5)
+        value, unit = _format_period(730.4 * 24)
         self.assertEqual(unit, "Earth days")
 
     def test_at_years_threshold_is_years(self):
-        # 730.5 days is just over the 730-day threshold (_YEARS_THRESHOLD_DAYS = 730.0)
-        value, unit = _format_period(730.5 * 24)
+        # 731.0 days is just over the 2-year threshold
+        value, unit = _format_period(731.0 * 24)
         self.assertEqual(unit, "Earth years")
 
 

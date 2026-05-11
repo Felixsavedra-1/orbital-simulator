@@ -42,7 +42,7 @@ def propagate_two_body(
     dt_s: float,
     n_steps: int,
     gravitational_constant: float = G,
-) -> list[tuple]:
+) -> list[tuple[float, float, float, float, float]]:
     """Propagate a two-body orbit using 4th-order Runge-Kutta integration.
 
     Central body is fixed at the origin. All quantities in SI units.

@@ -197,6 +197,12 @@ class TestHohmannDeltaV(unittest.TestCase):
         with self.assertRaises(ValueError):
             calculate_hohmann_delta_v(EARTH_ORBITAL_RADIUS, 0.0, SUN_MASS)
 
+    def test_descending_transfer_both_negative(self):
+        # Mars → Earth is a descending transfer; both burns are decelerations
+        dv1, dv2 = calculate_hohmann_delta_v(MARS_ORBITAL_RADIUS, EARTH_ORBITAL_RADIUS, SUN_MASS)
+        self.assertLess(dv1, 0.0)
+        self.assertLess(dv2, 0.0)
+
 
 class TestMassRatio(unittest.TestCase):
     def test_known_value(self):

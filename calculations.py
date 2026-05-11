@@ -98,6 +98,7 @@ def calculate_hohmann_delta_v(
     """Return (departure_dv_km_s, arrival_dv_km_s) for a Hohmann transfer between circular orbits.
 
     Both values are positive for ascending transfers (r2 > r1).
+    For descending transfers (r2 < r1) both values are negative (deceleration burns); take abs() for budget math.
 
     Raises:
         ValueError: If r1_m, r2_m, central_mass_kg, or gravitational_constant are <= 0 or non-finite.

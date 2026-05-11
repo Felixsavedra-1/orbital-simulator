@@ -41,7 +41,7 @@ class MetricRecord:
     note: str = ""
 
 
-_YEARS_THRESHOLD_DAYS = 730.0  # display in years for periods ≥ ~2 Earth years (730 days)
+_YEARS_THRESHOLD_DAYS = 365.25 * 2  # display in years for periods ≥ 2 Earth years
 
 
 def _format_period(period_hours: float) -> tuple[str, str]:
@@ -284,9 +284,9 @@ def render_report(section: str, output_format: str) -> str:
     }
     try:
         return renderers[output_format](section)
-    except ValueError:
-        raise
     except Exception as e:
+        if isinstance(e, ValueError):
+            raise
         raise RuntimeError(
             f"Renderer '{output_format}' failed for section '{section}': {e}"
         ) from e
