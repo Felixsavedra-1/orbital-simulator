@@ -1,0 +1,14 @@
+{
+  "name": "orbital-simulation-gif-capture",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Captures an animated GIF from the Three.js solar system visualization",
+  "scripts": {
+    "capture": "node capture_gif.js"
+  },
+  "dependencies": {
+    "gif-encoder-2": "^1.0.4",
+    "jimp": "^0.22.12",
+    "puppeteer": "^22.0.0"
+  }
+}

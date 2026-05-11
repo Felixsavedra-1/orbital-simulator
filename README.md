@@ -2,7 +2,7 @@
 
 Physics-based orbital mechanics engine — 8 planets, mission planning, and a live 3D visualization driven by the same data.
 
-![Solar System 3D Simulation](preview.png)
+![Solar System 3D Simulation](preview.gif)
 
 ---
 
