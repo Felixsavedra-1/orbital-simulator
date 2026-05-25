@@ -284,9 +284,9 @@ def render_report(section: str, output_format: str) -> str:
     }
     try:
         return renderers[output_format](section)
+    except ValueError:
+        raise
     except Exception as e:
-        if isinstance(e, ValueError):
-            raise
         raise RuntimeError(
             f"Renderer '{output_format}' failed for section '{section}': {e}"
         ) from e

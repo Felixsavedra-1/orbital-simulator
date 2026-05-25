@@ -9,6 +9,7 @@ from data import (
     ISS_TO_MOON_DISTANCE,
     MARS_ORBITAL_RADIUS,
     PLANETS,
+    TRANSFER_ORBITS,
 )
 
 
@@ -60,6 +61,23 @@ class TestData(unittest.TestCase):
         mars = next(p for p in PLANETS if p.name == "Mars")
         self.assertEqual(EARTH_ORBITAL_RADIUS, earth.orbital_radius_m)
         self.assertEqual(MARS_ORBITAL_RADIUS, mars.orbital_radius_m)
+
+    def test_transfer_orbits_structure(self):
+        self.assertEqual(len(TRANSFER_ORBITS), 2)
+        for t in TRANSFER_ORBITS:
+            self.assertIsInstance(t.name, str)
+            self.assertGreater(t.r1_m, 0)
+            self.assertGreater(t.r2_m, 0)
+            self.assertGreater(t.central_mass_kg, 0)
+            self.assertGreater(t.r2_m, t.r1_m)
+
+        leo_moon = TRANSFER_ORBITS[0]
+        self.assertEqual(leo_moon.name, "LEO-Moon")
+        self.assertEqual(leo_moon.central_mass_kg, EARTH_MASS)
+
+        earth_mars = TRANSFER_ORBITS[1]
+        self.assertEqual(earth_mars.name, "Earth-Mars")
+        self.assertEqual(earth_mars.central_mass_kg, SUN_MASS)
 
 
 if __name__ == "__main__":

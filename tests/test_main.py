@@ -32,6 +32,7 @@ class TestMainCLI(unittest.TestCase):
         self.assertIn("--EARTH ORBITAL SYSTEMS--", output)
         self.assertIn("--CONCEPT STATIONS--", output)
         self.assertIn("--MARS BASE CONCEPT--", output)
+        self.assertIn("--HOHMANN TRANSFER ORBITS--", output)
 
     def test_json_format(self):
         output = self._run_main_with_args(["--format", "json", "--section", "planets"])
@@ -44,6 +45,13 @@ class TestMainCLI(unittest.TestCase):
         output = self._run_main_with_args(["--format", "csv", "--section", "earth"])
         self.assertIn("section,label,value,value_num,unit,note", output)
         self.assertIn("earth,Moon orbital velocity", output)
+
+    def test_transfers_section(self):
+        output = self._run_main_with_args(["--section", "transfers"])
+        self.assertIn("--HOHMANN TRANSFER ORBITS--", output)
+        self.assertNotIn("--PLANET ORBITAL VELOCITY & PERIOD DATA--", output)
+        self.assertIn("LEO-Moon", output)
+        self.assertIn("Earth-Mars", output)
 
     def test_output_file(self):
         with tempfile.TemporaryDirectory() as tmp_dir:

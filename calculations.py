@@ -104,7 +104,8 @@ def calculate_hohmann_delta_v(
         ValueError: If r1_m, r2_m, central_mass_kg, or gravitational_constant are <= 0 or non-finite.
     """
     _validate_inputs(r1_m, central_mass_kg, gravitational_constant)
-    _validate_inputs(r2_m, central_mass_kg, gravitational_constant)
+    if not math.isfinite(r2_m) or r2_m <= 0:
+        raise ValueError("r2_m must be a finite positive number")
     a = (r1_m + r2_m) / 2.0
     dv1 = (
         calculate_vis_viva_velocity(r1_m, a, central_mass_kg, gravitational_constant)

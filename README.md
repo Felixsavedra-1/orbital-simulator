@@ -4,6 +4,8 @@ Physics-based orbital mechanics engine — 8 planets, mission planning, and a li
 
 ![Solar System 3D Simulation](preview.gif)
 
+**Skills demonstrated:** numerical integration (RK4), astrodynamics (vis-viva, Hohmann transfers, Tsiolkovsky rocket equation), layered Python architecture, 83-test suite validated against NASA/JPL reference values — zero external dependencies.
+
 ---
 
 ## Quick Start
@@ -76,7 +78,7 @@ propagator.py     RK4 two-body numerical integrator
 report.py         record builder + text / JSON / CSV renderers
 main.py           CLI entrypoint
 solar_system.html 3D animation (Three.js, CDN)
-tests/            80 tests across 5 modules
+tests/            83 tests across 5 modules
 ```
 
 **Data flow:** `main.py` → `render_report()` → renderer → `collect_records()` → section builders → `calculations.py`
@@ -117,14 +119,13 @@ tests/            80 tests across 5 modules
 - Moon radius is the semi-major axis; actual range 356,500–406,700 km (e ≈ 0.0549)
 - ISS altitude is a 2024-Q1 mean; decays ~2 km/year without reboosts
 - Earth-Mars midpoint uses perihelion/aphelion heuristic, not a conjunction distance
-- Mars base parameters are intentionally TBD
 
 ---
 
 ## Testing
 
 ```bash
-python3 -m unittest discover -s tests     # 80 tests
+python3 -m unittest discover -s tests     # 83 tests
 python3 -m unittest tests.test_calculations
 ```
 
