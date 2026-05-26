@@ -130,3 +130,7 @@ python3 -m unittest tests.test_calculations
 ```
 
 Covers: physics functions · invalid input rejection · data integrity · JSON schema contract · CSV format · record counts · full pipeline · CLI routing · RK4 propagator.
+
+---
+
+<p align="center"><img src="company.JPG" width="511" alt="Company"></p>

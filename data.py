@@ -25,7 +25,7 @@ class TransferOrbit(NamedTuple):
 
 
 # Semi-major axes (AU) from JPL Horizons, epoch J2000.0
-PLANET_SEMIMAJOR_AXIS_AU = [
+PLANET_SEMIMAJOR_AXIS_AU: list[tuple[str, float]] = [
     ("Mercury", 0.38709927),
     ("Venus",   0.72333566),
     ("Earth",   1.00000261),
@@ -36,9 +36,9 @@ PLANET_SEMIMAJOR_AXIS_AU = [
     ("Neptune", 30.06992276),
 ]
 
-PLANETS = [OrbitalBody(name, axis_au * AU, SUN_MASS) for name, axis_au in PLANET_SEMIMAJOR_AXIS_AU]
+PLANETS: list[OrbitalBody] = [OrbitalBody(name, axis_au * AU, SUN_MASS) for name, axis_au in PLANET_SEMIMAJOR_AXIS_AU]
 
-EARTH_ORBITS = [
+EARTH_ORBITS: list[OrbitalBody] = [
     OrbitalBody("Moon", MOON_ORBITAL_RADIUS, EARTH_MASS, "Natural satellite"),
     OrbitalBody("ISS", EARTH_RADIUS + ISS_ALTITUDE, EARTH_MASS, "Space station"),
 ]
@@ -66,7 +66,7 @@ if EARTH_MARS_MIN_SEPARATION_LOWER_BOUND <= 0:
         f"EARTH_MARS_MIN_SEPARATION_LOWER_BOUND must be positive, got {EARTH_MARS_MIN_SEPARATION_LOWER_BOUND}"
     )
 
-CONCEPT_STATIONS = [
+CONCEPT_STATIONS: list[ConceptStation] = [
     ConceptStation(
         "Earth-Moon midpoint",
         MOON_ORBITAL_RADIUS / 2,
@@ -79,7 +79,7 @@ CONCEPT_STATIONS = [
     ),
 ]
 
-TRANSFER_ORBITS = [
+TRANSFER_ORBITS: list[TransferOrbit] = [
     TransferOrbit(
         name="LEO-Moon",
         r1_m=EARTH_RADIUS + ISS_ALTITUDE,

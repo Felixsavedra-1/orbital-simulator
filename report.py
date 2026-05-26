@@ -173,6 +173,18 @@ def _transfer_records() -> list[MetricRecord]:
     return records
 
 
+def _validate_section(section: str) -> None:
+    if section not in VALID_SECTIONS:
+        valid_sections = ", ".join(VALID_SECTIONS)
+        raise ValueError(f"Unsupported section '{section}'. Valid options: {valid_sections}")
+
+
+def _validate_output_format(output_format: str) -> None:
+    if output_format not in VALID_OUTPUT_FORMATS:
+        valid_formats = ", ".join(VALID_OUTPUT_FORMATS)
+        raise ValueError(f"Unsupported output format '{output_format}'. Valid options: {valid_formats}")
+
+
 def collect_records(section: str) -> list[MetricRecord]:
     """Return ordered MetricRecords for the given section.
 
@@ -290,15 +302,3 @@ def render_report(section: str, output_format: str) -> str:
         raise RuntimeError(
             f"Renderer '{output_format}' failed for section '{section}': {e}"
         ) from e
-
-
-def _validate_section(section: str) -> None:
-    if section not in VALID_SECTIONS:
-        valid_sections = ", ".join(VALID_SECTIONS)
-        raise ValueError(f"Unsupported section '{section}'. Valid options: {valid_sections}")
-
-
-def _validate_output_format(output_format: str) -> None:
-    if output_format not in VALID_OUTPUT_FORMATS:
-        valid_formats = ", ".join(VALID_OUTPUT_FORMATS)
-        raise ValueError(f"Unsupported output format '{output_format}'. Valid options: {valid_formats}")

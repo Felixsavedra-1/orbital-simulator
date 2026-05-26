@@ -63,7 +63,7 @@ def propagate_two_body(
 
     GM = gravitational_constant * central_mass_kg
     state: _State = (x0_m, y0_m, vx0_ms, vy0_ms)
-    results: list[tuple] = [(0.0, x0_m, y0_m, vx0_ms, vy0_ms)]
+    results: list[tuple[float, float, float, float, float]] = [(0.0, x0_m, y0_m, vx0_ms, vy0_ms)]
     for step in range(n_steps):
         state = _rk4_step(state, GM, dt_s)
         results.append(((step + 1) * dt_s, state[0], state[1], state[2], state[3]))
