@@ -17,7 +17,10 @@ async function main() {
   });
 
   const page = await browser.newPage();
-  await page.setViewport({ width: WIDTH, height: HEIGHT });
+  // deviceScaleFactor: 2 makes the dashboard render at 1600×900 (via its
+  // setPixelRatio cap) so we can supersample-downscale to 800×450 for crisp,
+  // less-banded frames.
+  await page.setViewport({ width: WIDTH, height: HEIGHT, deviceScaleFactor: 2 });
 
   const htmlPath = path.resolve(__dirname, 'solar_system.html');
   await page.goto(`file://${htmlPath}`);
@@ -25,10 +28,10 @@ async function main() {
   // Wait for Three.js scene to initialize
   await new Promise(r => setTimeout(r, 2000));
 
-  // Moderate speed so motion reads without being dizzying
+  // Calm, readable pace — 1.0× is the dashboard's natural default speed
   await page.evaluate(() => {
     const slider = document.getElementById('speed');
-    slider.value = 2.5;
+    slider.value = 1.0;
     slider.dispatchEvent(new Event('input'));
   });
 
@@ -57,6 +60,9 @@ async function main() {
 
   for (const buf of frames) {
     const img = await Jimp.read(buf);
+    // Downscale the 1600×900 supersampled capture to the 800×450 output —
+    // this is the anti-aliasing win and softens 256-color banding.
+    img.resize(WIDTH, HEIGHT, Jimp.RESIZE_BICUBIC);
     gif.addFrame(img.bitmap.data);
   }
 

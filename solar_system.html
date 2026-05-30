@@ -501,8 +501,6 @@ const tabEls = [...document.querySelectorAll('.tab')];
 const manager = {
   activeId: null,
   ease: null,
-  _from: new THREE.Vector3(),
-  _to:   new THREE.Vector3(),
   _tgt:  new THREE.Vector3(),
 
   switchTo(id, instant = false) {
