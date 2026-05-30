@@ -2,7 +2,7 @@
 
 Physics-based orbital mechanics engine — 8 planets, mission planning, and a live 3D visualization driven by the same data.
 
-![Solar System 3D Simulation](preview.gif)
+![Orbital dashboard — Moon · Solar System · Mars views](preview.gif)
 
 **Skills demonstrated:** numerical integration (RK4), astrodynamics (vis-viva, Hohmann transfers, Tsiolkovsky rocket equation), layered Python architecture, 83-test suite validated against NASA/JPL reference values — zero external dependencies.
 
@@ -42,8 +42,11 @@ Or double-click `solar_system.html` in Finder. Requires internet (Three.js via C
 
 The animation uses the same JPL semi-major axes and Kepler velocities as the report engine — no separate dataset.
 
+Three tabbed views share one renderer: **Moon** (Earth–Moon system with the ISS in LEO), **Solar System** (all 8 planets), and **Mars** (heliocentric Earth → Moon → Mars with a Hohmann transfer corridor).
+
 | Control | Action |
 |---|---|
+| Tabs | Switch view — click, keys `1`/`2`/`3`, or `←`/`→` |
 | Drag | Orbit camera |
 | Scroll | Zoom |
 | Right-drag | Pan |

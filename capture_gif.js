@@ -6,8 +6,9 @@ const path = require('path');
 
 const WIDTH = 800;
 const HEIGHT = 450;
-const FRAME_COUNT = 60;
-const FRAME_DELAY = 100; // ms between frames
+const FRAME_DELAY = 100;        // ms between frames
+const VIEWS = ['moon', 'solar', 'mars'];
+const FRAMES_PER_VIEW = 20;     // ~2s per tab (incl. the camera ease-in)
 
 async function main() {
   console.log('Launching browser...');
@@ -24,20 +25,25 @@ async function main() {
   // Wait for Three.js scene to initialize
   await new Promise(r => setTimeout(r, 2000));
 
-  // Speed up the animation so all planets show visible movement
+  // Moderate speed so motion reads without being dizzying
   await page.evaluate(() => {
     const slider = document.getElementById('speed');
-    slider.value = 3;
+    slider.value = 2.5;
     slider.dispatchEvent(new Event('input'));
   });
 
-  console.log(`Capturing ${FRAME_COUNT} frames...`);
+  // Cycle the three tabs, capturing each view (the first frames of each
+  // segment naturally include the dashboard's ~0.55s camera ease-in).
+  const totalFrames = VIEWS.length * FRAMES_PER_VIEW;
+  console.log(`Capturing ${totalFrames} frames across ${VIEWS.length} views...`);
   const frames = [];
-  for (let i = 0; i < FRAME_COUNT; i++) {
-    const buf = await page.screenshot({ type: 'png' });
-    frames.push(buf);
-    process.stdout.write(`\r  frame ${i + 1}/${FRAME_COUNT}`);
-    await new Promise(r => setTimeout(r, FRAME_DELAY));
+  for (const view of VIEWS) {
+    await page.evaluate(v => document.querySelector(`.tab[data-view="${v}"]`).click(), view);
+    for (let i = 0; i < FRAMES_PER_VIEW; i++) {
+      frames.push(await page.screenshot({ type: 'png' }));
+      process.stdout.write(`\r  ${view}: frame ${i + 1}/${FRAMES_PER_VIEW}`);
+      await new Promise(r => setTimeout(r, FRAME_DELAY));
+    }
   }
   console.log();
 
